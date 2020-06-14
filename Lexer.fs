@@ -38,6 +38,13 @@ module Lexer =
 
     let nextChar (tokenArray: char []): char = tokenArray.[0]
 
+    let skipWhiteSpace (currChar: char) =
+        match currChar with
+        | ' ' -> 2
+        | '\t' -> 2
+        | '\r' -> 2
+        | _ -> 1
+
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
         | true -> '0'

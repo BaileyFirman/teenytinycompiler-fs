@@ -8,23 +8,29 @@ let main argv =
     let prints string =
         printf "%s\n" string
 
+    let printt (token: Token) =
+        let tokenTypeString = token.Type.ToString()
+        printf "%s\n" tokenTypeString
+
     let rec parseLoop (inputArray: char[]) =
         let currToken =
             inputArray
             |> Lexer.nextChar
-            |> Lexer.getToken
-        
-        let currTokenType = currToken.Type.ToString()
 
-        prints currTokenType
+        let x =
+            currToken
+            |> Lexer.getToken
+
+        printt x
 
         let nextChar = Lexer.peek(inputArray)
+        let offset = Lexer.skipWhiteSpace nextChar
         match nextChar with 
         | '0' -> printf ">>> %s" "DONE"
-        | _ -> parseLoop (inputArray.[1..]) 
+        | _ -> parseLoop (inputArray.[offset..])
 
     // let input = "LET foobar = 123".ToCharArray()
-    let input = "+- */".ToCharArray()
+    let input = "+- */\n".ToCharArray()
 
     parseLoop input
     0
