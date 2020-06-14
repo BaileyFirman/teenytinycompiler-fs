@@ -17,20 +17,28 @@ let main argv =
             inputArray
             |> Lexer.nextChar
 
-        let x =
-            currToken
-            |> Lexer.getToken
+        let y = Lexer.getToken(currToken, inputArray)
 
-        printt x
+        printt y
 
         let nextChar = Lexer.peek(inputArray)
-        let offset = Lexer.skipWhiteSpace nextChar
+        let offset = Lexer.skipOffset(currToken, nextChar)
+        
+        let newInputArray =
+            match inputArray.Length < offset with
+            | true -> [||]
+            | false -> inputArray.[offset..]
+
         match nextChar with 
         | '0' -> printf ">>> %s" "DONE"
-        | _ -> parseLoop (inputArray.[offset..])
+        | _ ->
+            match newInputArray.Length = 0 with
+            | true -> printf ">>> %s" "DONE"
+            | false -> parseLoop (newInputArray)
 
     // let input = "LET foobar = 123".ToCharArray()
-    let input = "+- */\n".ToCharArray()
+    // let input = "+- */\n".ToCharArray()
+    let input = "+- */ >>= = !=".ToCharArray()
 
     parseLoop input
     0
