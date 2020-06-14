@@ -1,4 +1,5 @@
 namespace Lexer
+open Microsoft.FSharp.Core
 
 type TokenType =
     | EOF = -1
@@ -29,12 +30,18 @@ type TokenType =
     | GT = 210
     | GTEQ = 211
 
-type Token = { Text: char; Type: TokenType }
+type Token = { Text: string; Type: TokenType }
 
 module Lexer =
     let abort message =
         let failMessage = sprintf "%s%s" "Lexing error. " message
         failwith failMessage
+
+    let private tokenFromChar(c: char, t: TokenType) =
+        { Text = c.ToString(); Type = t }
+
+    let private tokenFromString(s: string, t: TokenType) =
+        { Text = s; Type = t }
 
     let nextChar (tokenArray: char []): char = tokenArray.[0]
 
@@ -50,24 +57,22 @@ module Lexer =
         | true -> '0'
         | false -> tokenArray.[1]
 
-    let getToken (currChar: char) =
+    let getToken (currChar: char, tokenArray: char[]) =
         match currChar with
-        | '+' ->
-            { Text = currChar
-              Type = TokenType.PLUS }
-        | '-' ->
-            { Text = currChar
-              Type = TokenType.MINUS }
-        | '*' ->
-            { Text = currChar
-              Type = TokenType.ASTERISK }
-        | '/' ->
-            { Text = currChar
-              Type = TokenType.SLASH }
-        | '\n' ->
-            { Text = currChar
-              Type = TokenType.NEWLINE }
-        | '0' ->
-            { Text = currChar
-              Type = TokenType.EOF }
+        | '+'  -> tokenFromChar(currChar, TokenType.PLUS)
+        | '-'  -> tokenFromChar(currChar, TokenType.MINUS)
+        | '*'  -> tokenFromChar(currChar, TokenType.ASTERISK)
+        | '/'  -> tokenFromChar(currChar, TokenType.ASTERISK)
+        | '\n' -> tokenFromChar(currChar, TokenType.NEWLINE)
+        | '0'  -> tokenFromChar(currChar, TokenType.EOF)
+        | '>'  -> // > || =>
+            let nextChar = peek tokenArray
+            match nextChar with
+            | '=' -> tokenFromString(string [| currChar;nextChar |], TokenType.GTEQ)
+            | _ -> tokenFromChar(currChar, TokenType.GT)
+        | '<'  -> // > || =>
+            let nextChar = peek tokenArray
+            match nextChar with
+            | '=' -> tokenFromString(string [| currChar;nextChar |], TokenType.LTEQ)
+            | _ -> tokenFromChar(currChar, TokenType.LT)
         | _ -> sprintf "%s%c" "Unknown Token: " currChar |> abort
