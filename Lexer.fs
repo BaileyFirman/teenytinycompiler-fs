@@ -1,4 +1,5 @@
 namespace Lexer
+
 open Microsoft.FSharp.Core
 
 type TokenType =
@@ -37,11 +38,9 @@ module Lexer =
         let failMessage = sprintf "%s%s" "Lexing error. " message
         failwith failMessage
 
-    let private tokenFromChar(c: char, t: TokenType) =
-        { Text = c.ToString(); Type = t }
+    let private tokenFromChar (c: char, t: TokenType) = { Text = c.ToString(); Type = t }
 
-    let private tokenFromString(s: string, t: TokenType) =
-        { Text = s; Type = t }
+    let private tokenFromString (s: string, t: TokenType) = { Text = s; Type = t }
 
     let nextChar (tokenArray: char []): char = tokenArray.[0]
 
@@ -52,27 +51,43 @@ module Lexer =
         | '\r' -> 2
         | _ -> 1
 
+    let skipOffset (currChar: char, nextChar: char) =
+        let skipIfWhitespace = skipWhiteSpace nextChar
+        let compositeString = System.String [| currChar; nextChar |]
+        printf "\t\t\t\tDEBUG >>> %s\n" compositeString
+        match compositeString with
+        | ">=" -> 3
+        | "<=" -> 3
+        | "!=" -> 3
+        | _ -> skipIfWhitespace
+
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
         | true -> '0'
         | false -> tokenArray.[1]
 
-    let getToken (currChar: char, tokenArray: char[]) =
+    let getToken (currChar: char, tokenArray: char []) =
         match currChar with
-        | '+'  -> tokenFromChar(currChar, TokenType.PLUS)
-        | '-'  -> tokenFromChar(currChar, TokenType.MINUS)
-        | '*'  -> tokenFromChar(currChar, TokenType.ASTERISK)
-        | '/'  -> tokenFromChar(currChar, TokenType.ASTERISK)
-        | '\n' -> tokenFromChar(currChar, TokenType.NEWLINE)
-        | '0'  -> tokenFromChar(currChar, TokenType.EOF)
-        | '>'  -> // > || =>
+        | '+' -> tokenFromChar (currChar, TokenType.PLUS)
+        | '-' -> tokenFromChar (currChar, TokenType.MINUS)
+        | '*' -> tokenFromChar (currChar, TokenType.ASTERISK)
+        | '/' -> tokenFromChar (currChar, TokenType.ASTERISK)
+        | '\n' -> tokenFromChar (currChar, TokenType.NEWLINE)
+        | '0' -> tokenFromChar (currChar, TokenType.EOF)
+        | '=' -> tokenFromChar (currChar, TokenType.EQ)
+        | '>' ->
             let nextChar = peek tokenArray
             match nextChar with
-            | '=' -> tokenFromString(string [| currChar;nextChar |], TokenType.GTEQ)
-            | _ -> tokenFromChar(currChar, TokenType.GT)
-        | '<'  -> // > || =>
+            | '=' -> tokenFromString (System.String [| currChar; nextChar |], TokenType.GTEQ)
+            | _ -> tokenFromChar (currChar, TokenType.GT)
+        | '<' ->
             let nextChar = peek tokenArray
             match nextChar with
-            | '=' -> tokenFromString(string [| currChar;nextChar |], TokenType.LTEQ)
-            | _ -> tokenFromChar(currChar, TokenType.LT)
+            | '=' -> tokenFromString (System.String [| currChar; nextChar |], TokenType.LTEQ)
+            | _ -> tokenFromChar (currChar, TokenType.LT)
+        | '!' ->
+            let nextChar = peek tokenArray
+            match nextChar with
+            | '=' -> tokenFromString (System.String [| currChar; nextChar |], TokenType.NOTEQ)
+            | _ -> "Expected !=, got !" |> abort
         | _ -> sprintf "%s%c" "Unknown Token: " currChar |> abort
