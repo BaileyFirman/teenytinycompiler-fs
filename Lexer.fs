@@ -70,23 +70,31 @@ module Lexer =
             | true -> token.Text.Length
             | false -> 1
 
-    let findIndex arr elem = arr |> Array.findIndex ((=) elem) 
+    let findIndex arr elem = arr |> Array.findIndex ((=) elem)
 
     let validateString (string: string) =
         let containsReturn = string.Contains('\r')
         let containsTab = string.Contains('\t')
         let containsBackslash = string.Contains('\\')
         let containsFraction = string.Contains('%')
-        containsReturn || containsTab || containsBackslash || containsFraction
+        containsReturn
+        || containsTab
+        || containsBackslash
+        || containsFraction
 
-    let extractString(tokenArray: char[]): Token =
+    let extractString (tokenArray: char []): Token =
         let endIndex = findIndex tokenArray '\"'
-        let stringText = System.String tokenArray.[..endIndex - 1]
+
+        let stringText =
+            System.String tokenArray.[..endIndex - 1]
+
         printf "%s\n" stringText
         match validateString stringText with
         | true -> "Illegal character in string." |> failwith
-        | false -> { Text = stringText; Type = TokenType.STRING }
-        
+        | false ->
+            { Text = stringText
+              Type = TokenType.STRING }
+
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
         | true -> '\u0004'
@@ -117,31 +125,38 @@ module Lexer =
             | '=' -> tokenFromString (System.String [| currChar; nextChar |], TokenType.NOTEQ)
             | _ -> "Expected !=, got !" |> abort
         | '\"' -> extractString tokenArray.[1..]
-        | _ -> sprintf "%s%c%d" "Unknown Token: " currChar (int currChar - int 0) |> abort
+        | _ ->
+            sprintf "%s%c%d" "Unknown Token: " currChar (int currChar - int 0)
+            |> abort
 
-    let rec getNumber (tokenArray: char[], newNumber: char[]) =
+    let rec getNumber (tokenArray: char [], newNumber: char []) =
         let currentChar = tokenArray.[0]
         let isDigit = System.Char.IsDigit currentChar
         let isPoint = currentChar = '.'
         match isDigit || isPoint with
         | true ->
-            let build = Array.concat [| newNumber; [| currentChar |] |]
+            let build =
+                Array.concat [| newNumber; [| currentChar |] |]
+
             getNumber (tokenArray.[1..], build)
         | false -> newNumber
 
     let handleNumberToken (currChar: char, tokenArray: char []) =
         let numberArray = getNumber (tokenArray, [||])
-        let numberString = System.String numberArray
+        let numberString = String numberArray
         printf "%s\n" numberString
-        { Text = numberString; Type = TokenType.NUMBER }
+        { Text = numberString
+          Type = TokenType.NUMBER }
 
-    let rec getAlpha (tokenArray: char[], newNumber: char[]) =
+    let rec getAlpha (tokenArray: char [], newNumber: char []) =
         let currentChar = tokenArray.[0]
         let isAlpha = System.Char.IsLetter currentChar
         match isAlpha with
         | true ->
-            let build = Array.concat [| newNumber; [| currentChar |] |]
-            let asString = System.String build
+            let build =
+                Array.concat [| newNumber; [| currentChar |] |]
+
+            let asString = String build
             getAlpha (tokenArray.[1..], build)
         | false -> newNumber
 
@@ -150,19 +165,19 @@ module Lexer =
         let alphaString = String alphaArray
 
         match alphaString with
-        | "LABEL" -> tokenFromString(alphaString, TokenType.LABEL)
-        | "GOTO" -> tokenFromString(alphaString, TokenType.GOTO)
-        | "PRINT" -> tokenFromString(alphaString, TokenType.PRINT)
-        | "INPUT" -> tokenFromString(alphaString, TokenType.INPUT)
-        | "LET" -> tokenFromString(alphaString, TokenType.LET)
-        | "IF" -> tokenFromString(alphaString, TokenType.IF)
-        | "THEN" -> tokenFromString(alphaString, TokenType.THEN)
-        | "ENDIF" -> tokenFromString(alphaString, TokenType.ENDIF)
-        | "WHILE" -> tokenFromString(alphaString, TokenType.WHILE)
-        | "REPEAT" -> tokenFromString(alphaString, TokenType.REPEAT)
-        | "ENDWHILE" -> tokenFromString(alphaString, TokenType.ENDWHILE)
-        | _ -> tokenFromString(alphaString, TokenType. IDENT)
-        
+        | "LABEL" -> tokenFromString (alphaString, TokenType.LABEL)
+        | "GOTO" -> tokenFromString (alphaString, TokenType.GOTO)
+        | "PRINT" -> tokenFromString (alphaString, TokenType.PRINT)
+        | "INPUT" -> tokenFromString (alphaString, TokenType.INPUT)
+        | "LET" -> tokenFromString (alphaString, TokenType.LET)
+        | "IF" -> tokenFromString (alphaString, TokenType.IF)
+        | "THEN" -> tokenFromString (alphaString, TokenType.THEN)
+        | "ENDIF" -> tokenFromString (alphaString, TokenType.ENDIF)
+        | "WHILE" -> tokenFromString (alphaString, TokenType.WHILE)
+        | "REPEAT" -> tokenFromString (alphaString, TokenType.REPEAT)
+        | "ENDWHILE" -> tokenFromString (alphaString, TokenType.ENDWHILE)
+        | _ -> tokenFromString (alphaString, TokenType.IDENT)
+
     let getToken (currChar: char, tokenArray: char []) =
         match System.Char.IsLetterOrDigit currChar with
         | false -> handleToken (currChar, tokenArray)
