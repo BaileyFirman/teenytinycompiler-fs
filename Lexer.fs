@@ -44,22 +44,21 @@ module Lexer =
 
     let nextChar (tokenArray: char []): char = tokenArray.[0]
 
-    let skipWhiteSpace (currChar: char) =
-        match currChar with
-        | ' ' -> 2
-        | '\t' -> 2
-        | '\r' -> 2
-        | _ -> 1
+    let rec skipWhiteSpace (tokenArray: char []) =
+        match tokenArray.[0] with
+        | ' ' -> skipWhiteSpace tokenArray.[1..]
+        | '\t' -> skipWhiteSpace tokenArray.[1..]
+        | '\r' -> skipWhiteSpace tokenArray.[1..]
+        | _ -> tokenArray
+
 
     let skipOffset (currChar: char, nextChar: char) =
-        let skipIfWhitespace = skipWhiteSpace nextChar
         let compositeString = System.String [| currChar; nextChar |]
-        printf "\t\t\t\tDEBUG >>> %s\n" compositeString
         match compositeString with
-        | ">=" -> 3
-        | "<=" -> 3
-        | "!=" -> 3
-        | _ -> skipIfWhitespace
+        | ">=" -> 2
+        | "<=" -> 2
+        | "!=" -> 2
+        | _ -> 1
 
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
@@ -71,8 +70,9 @@ module Lexer =
         | '+' -> tokenFromChar (currChar, TokenType.PLUS)
         | '-' -> tokenFromChar (currChar, TokenType.MINUS)
         | '*' -> tokenFromChar (currChar, TokenType.ASTERISK)
-        | '/' -> tokenFromChar (currChar, TokenType.ASTERISK)
+        | '/' -> tokenFromChar (currChar, TokenType.SLASH)
         | '\n' -> tokenFromChar (currChar, TokenType.NEWLINE)
+        | '\t' -> tokenFromChar (currChar, TokenType.NEWLINE)
         | '0' -> tokenFromChar (currChar, TokenType.EOF)
         | '=' -> tokenFromChar (currChar, TokenType.EQ)
         | '>' ->
