@@ -45,13 +45,24 @@ let main argv =
         | '\u0004' -> printf "\t\t\t\t DEBUG >>> %s" "DONE"
         | _ -> parseLoop (characterArray.[skipOffset..])
 
-    // let input = "LET foobar = 123".ToCharArray()
-    // let input = "+- */\n".ToCharArray()
-    // let input = "+- */ >>= #a comment\n= !=\n0".ToCharArray()
-    // let input = "+- # This is a comment!\n */".ToCharArray()
-    // let input = "+- \"This is a string\" # This is a comment!\n */".ToCharArray()
-    // let input = "+-123 9.8654*/".ToCharArray()
-    let input = "IF+-123 foo*THEN/".ToCharArray()
+    let testStrings = [|
+        "LET foobar = 123";
+        "+- */\n";
+        "+- */ >>= #a comment\n= !=\n0";
+        "+- # This is a comment!\n */";
+        "+- \"This is a string\" # This is a comment!\n */";
+        "+-123 9.8654*/";
+        "IF+-123 foo*THEN/\n"
+    |]
 
-    parseLoop input
+    let parseString (str: string): bool =
+        let arr = str.ToCharArray()
+        printf "\n%s\n" str
+        parseLoop arr
+        true
+
+    testStrings
+    |> Array.forall parseString
+    |> ignore
+
     0
