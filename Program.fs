@@ -46,12 +46,12 @@ let main argv =
         | _ -> parseLoop (characterArray.[skipOffset..])
 
     let testStrings = [|
-        "LET foobar = 123";
-        "+- */\n";
-        "+- */ >>= #a comment\n= !=\n0";
-        "+- # This is a comment!\n */";
-        "+- \"This is a string\" # This is a comment!\n */";
-        "+-123 9.8654*/";
+        // "LET foobar = 123";
+        // "+- */\n";
+        // "+- */ >>= #a comment\n= !=\n0";
+        // "+- # This is a comment!\n */";
+        // "+- \"This is a string\" # This is a comment!\n */";
+        // "+-123 9.8654*/";
         "IF+-123 foo*THEN/\n"
     |]
 
