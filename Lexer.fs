@@ -1,6 +1,7 @@
 namespace Lexer
 
 open Microsoft.FSharp.Core
+open System
 
 type TokenType =
     | EOF = -1
@@ -62,7 +63,12 @@ module Lexer =
         | TokenType.LTEQ -> 2
         | TokenType.NOTEQ -> 2
         | TokenType.STRING -> token.Text.Length + 2
-        | _ -> 1
+        | TokenType.NUMBER -> token.Text.Length + 1
+        | _ ->
+            let tokenTypeRaw = (int) token.Type
+            match tokenTypeRaw > 100 || tokenTypeRaw < 200 with
+            | true -> token.Text.Length
+            | false -> 1
 
     let findIndex arr elem = arr |> Array.findIndex ((=) elem) 
 
@@ -83,18 +89,17 @@ module Lexer =
         
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
-        | true -> '0'
+        | true -> '\u0004'
         | false -> tokenArray.[1]
 
-    let getToken (currChar: char, tokenArray: char []) =
+    let handleToken (currChar: char, tokenArray: char []) =
         match currChar with
         | '+' -> tokenFromChar (currChar, TokenType.PLUS)
         | '-' -> tokenFromChar (currChar, TokenType.MINUS)
         | '*' -> tokenFromChar (currChar, TokenType.ASTERISK)
         | '/' -> tokenFromChar (currChar, TokenType.SLASH)
         | '\n' -> tokenFromChar (currChar, TokenType.NEWLINE)
-        | '\t' -> tokenFromChar (currChar, TokenType.NEWLINE)
-        | '0' -> tokenFromChar (currChar, TokenType.EOF)
+        | '\u0004' -> tokenFromChar (currChar, TokenType.EOF)
         | '=' -> tokenFromChar (currChar, TokenType.EQ)
         | '>' ->
             let nextChar = peek tokenArray
@@ -113,3 +118,55 @@ module Lexer =
             | _ -> "Expected !=, got !" |> abort
         | '\"' -> extractString tokenArray.[1..]
         | _ -> sprintf "%s%c%d" "Unknown Token: " currChar (int currChar - int 0) |> abort
+
+    let rec getNumber (tokenArray: char[], newNumber: char[]) =
+        let currentChar = tokenArray.[0]
+        let isDigit = System.Char.IsDigit currentChar
+        let isPoint = currentChar = '.'
+        match isDigit || isPoint with
+        | true ->
+            let build = Array.concat [| newNumber; [| currentChar |] |]
+            getNumber (tokenArray.[1..], build)
+        | false -> newNumber
+
+    let handleNumberToken (currChar: char, tokenArray: char []) =
+        let numberArray = getNumber (tokenArray, [||])
+        let numberString = System.String numberArray
+        printf "%s\n" numberString
+        { Text = numberString; Type = TokenType.NUMBER }
+
+    let rec getAlpha (tokenArray: char[], newNumber: char[]) =
+        let currentChar = tokenArray.[0]
+        let isAlpha = System.Char.IsLetter currentChar
+        match isAlpha with
+        | true ->
+            let build = Array.concat [| newNumber; [| currentChar |] |]
+            let asString = System.String build
+            getAlpha (tokenArray.[1..], build)
+        | false -> newNumber
+
+    let handleAlphaToken (currChar: char, tokenArray: char []) =
+        let alphaArray = getAlpha (tokenArray, [||])
+        let alphaString = String alphaArray
+
+        match alphaString with
+        | "LABEL" -> tokenFromString(alphaString, TokenType.LABEL)
+        | "GOTO" -> tokenFromString(alphaString, TokenType.GOTO)
+        | "PRINT" -> tokenFromString(alphaString, TokenType.PRINT)
+        | "INPUT" -> tokenFromString(alphaString, TokenType.INPUT)
+        | "LET" -> tokenFromString(alphaString, TokenType.LET)
+        | "IF" -> tokenFromString(alphaString, TokenType.IF)
+        | "THEN" -> tokenFromString(alphaString, TokenType.THEN)
+        | "ENDIF" -> tokenFromString(alphaString, TokenType.ENDIF)
+        | "WHILE" -> tokenFromString(alphaString, TokenType.WHILE)
+        | "REPEAT" -> tokenFromString(alphaString, TokenType.REPEAT)
+        | "ENDWHILE" -> tokenFromString(alphaString, TokenType.ENDWHILE)
+        | _ -> tokenFromString(alphaString, TokenType. IDENT)
+        
+    let getToken (currChar: char, tokenArray: char []) =
+        match System.Char.IsLetterOrDigit currChar with
+        | false -> handleToken (currChar, tokenArray)
+        | true ->
+            match System.Char.IsDigit currChar with
+            | true -> handleNumberToken (currChar, tokenArray)
+            | false -> handleAlphaToken (currChar, tokenArray)
