@@ -51,15 +51,36 @@ module Lexer =
         | '\r' -> skipWhiteSpace tokenArray.[1..]
         | _ -> tokenArray
 
+    let rec skipComment (tokenArray: char []) =
+        match tokenArray.[0] with
+        | '\n' -> tokenArray
+        | _ -> skipComment tokenArray.[1..]
 
-    let skipOffset (currChar: char, nextChar: char) =
-        let compositeString = System.String [| currChar; nextChar |]
-        match compositeString with
-        | ">=" -> 2
-        | "<=" -> 2
-        | "!=" -> 2
+    let skipOffset (token: Token) =
+        match token.Type with
+        | TokenType.GTEQ -> 2
+        | TokenType.LTEQ -> 2
+        | TokenType.NOTEQ -> 2
+        | TokenType.STRING -> token.Text.Length + 2
         | _ -> 1
 
+    let findIndex arr elem = arr |> Array.findIndex ((=) elem) 
+
+    let validateString (string: string) =
+        let containsReturn = string.Contains('\r')
+        let containsTab = string.Contains('\t')
+        let containsBackslash = string.Contains('\\')
+        let containsFraction = string.Contains('%')
+        containsReturn || containsTab || containsBackslash || containsFraction
+
+    let extractString(tokenArray: char[]): Token =
+        let endIndex = findIndex tokenArray '\"'
+        let stringText = System.String tokenArray.[..endIndex - 1]
+        printf "%s\n" stringText
+        match validateString stringText with
+        | true -> "Illegal character in string." |> failwith
+        | false -> { Text = stringText; Type = TokenType.STRING }
+        
     let peek (tokenArray: char []): char =
         match tokenArray.Length = 1 with
         | true -> '0'
@@ -90,4 +111,5 @@ module Lexer =
             match nextChar with
             | '=' -> tokenFromString (System.String [| currChar; nextChar |], TokenType.NOTEQ)
             | _ -> "Expected !=, got !" |> abort
-        | _ -> sprintf "%s%c" "Unknown Token: " currChar |> abort
+        | '\"' -> extractString tokenArray.[1..]
+        | _ -> sprintf "%s%c%d" "Unknown Token: " currChar (int currChar - int 0) |> abort
