@@ -59,9 +59,9 @@ module Lexer =
 
     let skipOffset (token: Token) =
         match token.Type with
-        | TokenType.GTEQ -> 2
-        | TokenType.LTEQ -> 2
-        | TokenType.NOTEQ -> 2
+        | TokenType.GTEQ
+        | TokenType.LTEQ
+        | TokenType.NOTEQ -> token.Text.Length
         | TokenType.STRING -> token.Text.Length + 2
         | TokenType.NUMBER -> token.Text.Length + 1
         | _ ->
@@ -129,40 +129,20 @@ module Lexer =
             sprintf "%s%c%d" "Unknown Token: " currChar (int currChar - int 0)
             |> abort
 
-    let rec getNumber (tokenArray: char [], newNumber: char []) =
-        let currentChar = tokenArray.[0]
-        let isDigit = System.Char.IsDigit currentChar
-        let isPoint = currentChar = '.'
-        match isDigit || isPoint with
-        | true ->
-            let build =
-                Array.concat [| newNumber; [| currentChar |] |]
+    let rec getValue (chars: char [], newValue, matchFunc) =
+        let currentChar = chars.[0]
+        match matchFunc currentChar with
+        | false -> newValue
+        | true -> getValue (chars.[1..], newValue + string currentChar, matchFunc)
 
-            getNumber (tokenArray.[1..], build)
-        | false -> newNumber
+    let handleNumberToken (tokenArray: char []) =
+        let numberMatch c = Char.IsDigit c || c = '.'
+        let numberString = getValue (tokenArray, "", numberMatch)
+        tokenFromString (numberString, TokenType.NUMBER)
 
-    let handleNumberToken (currChar: char, tokenArray: char []) =
-        let numberArray = getNumber (tokenArray, [||])
-        let numberString = String numberArray
-        printf "%s\n" numberString
-        { Text = numberString
-          Type = TokenType.NUMBER }
-
-    let rec getAlpha (tokenArray: char [], newNumber: char []) =
-        let currentChar = tokenArray.[0]
-        let isAlpha = System.Char.IsLetter currentChar
-        match isAlpha with
-        | true ->
-            let build =
-                Array.concat [| newNumber; [| currentChar |] |]
-
-            let asString = String build
-            getAlpha (tokenArray.[1..], build)
-        | false -> newNumber
-
-    let handleAlphaToken (currChar: char, tokenArray: char []) =
-        let alphaArray = getAlpha (tokenArray, [||])
-        let alphaString = String alphaArray
+    let handleAlphaToken (tokenArray: char []) =
+        let stringMatch c = Char.IsLetter c
+        let alphaString = getValue (tokenArray, "", stringMatch)
 
         match alphaString with
         | "LABEL" -> tokenFromString (alphaString, TokenType.LABEL)
@@ -183,5 +163,5 @@ module Lexer =
         | false -> handleToken (currChar, tokenArray)
         | true ->
             match System.Char.IsDigit currChar with
-            | true -> handleNumberToken (currChar, tokenArray)
-            | false -> handleAlphaToken (currChar, tokenArray)
+            | true -> handleNumberToken tokenArray
+            | false -> handleAlphaToken tokenArray
