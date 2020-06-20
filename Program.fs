@@ -1,26 +1,10 @@
 open Lexer
 
-let printc char =
-    printf "%c\n" char
-
-let prints string =
-    printf "%s\n" string
-
-let printt (token: Token) =
-    let tokenTypeString = token.Type.ToString()
-    printf "%s\n" tokenTypeString
-
-let printArray (array: char[]) =
-    let arrayAsString = System.String (array)
-    printf "\t\t\t\t DEBUG >>> %s\n" arrayAsString
-
 [<EntryPoint>]
 let main argv =
-
-    let rec parseLoop (inputArray: char[]) =
-        // Skip until the next character isn't whitespace
+    let rec parseLoop (inputArray: char[]) (tokens: Token []) =
         let removedWhitespace = Lexer.skipWhiteSpace inputArray
-        // Remove comments
+
         let removedComments =
             match removedWhitespace.[0] with
             | '#' -> Lexer.skipComment removedWhitespace
@@ -28,22 +12,14 @@ let main argv =
         
         let characterArray = Lexer.skipWhiteSpace removedComments 
 
-        // Get our current and next chars
-        let currentChar = Lexer.nextChar characterArray
+        let currentToken = Lexer.getToken characterArray
+        let skipOffset = Lexer.skipOffset currentToken
         let nextChar = Lexer.peek characterArray
-
-        let currentToken = Lexer.getToken (currentChar, characterArray)
+        let newTokens = Array.append tokens [| currentToken |]
         
-        currentToken
-        |> printt
-        |> ignore
-
-        // How far should we skip?
-        let skipOffset = Lexer.skipOffset (currentToken)
-
         match nextChar with 
-        | '\u0004' -> printf "\t\t\t\t DEBUG >>> %s" "DONE"
-        | _ -> parseLoop (characterArray.[skipOffset..])
+        | '\u0004' -> tokens
+        | _ -> parseLoop characterArray.[skipOffset..] newTokens
 
     let testStrings = [|
         // "LET foobar = 123";
@@ -58,8 +34,10 @@ let main argv =
     let parseString (str: string): bool =
         let arr = str.ToCharArray()
         printf "\n%s\n" str
-        parseLoop arr
-        true
+        parseLoop arr [||]
+        |> Array.map (fun x -> x.Type)
+        |> printfn "%A"
+        false
 
     testStrings
     |> Array.forall parseString
