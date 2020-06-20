@@ -2,97 +2,71 @@ namespace Lexer
 
 open Microsoft.FSharp.Core
 open System
+open Types.Tokens
 
-type TokenType =
-    | EOF = -1
-    | NEWLINE = 0
-    | NUMBER = 1
-    | IDENT = 2
-    | STRING = 3
-    | LABEL = 101
-    | GOTO = 102
-    | PRINT = 103
-    | INPUT = 104
-    | LET = 105
-    | IF = 106
-    | THEN = 107
-    | ENDIF = 108
-    | WHILE = 109
-    | REPEAT = 110
-    | ENDWHILE = 111
-    | EQ = 201
-    | PLUS = 202
-    | MINUS = 203
-    | ASTERISK = 204
-    | SLASH = 205
-    | EQEQ = 300
-    | NOTEQ = 301
-    | LT = 208
-    | LTEQ = 302
-    | GT = 210
-    | GTEQ = 304
-
-type Token = { Text: string; Type: TokenType }
-
-module Lexer =
-    let abort message =
+module LexerFuncs =
+    let private abort message =
         sprintf "Lexing Error. %s" message |> failwith
 
     let tokenFromString tokenText tokenType = { Text = tokenText; Type = tokenType }
     let tokenFromChar (c: char) t = { Text = string c; Type = t }
 
-    let nextChar (tokenArray: char []) = tokenArray.[0]
+    let nextChar (chars: char []) = chars.[0]
 
-    let rec skipWhiteSpace (tokenArray: char []) =
-        match tokenArray.[0] with
-        | ' ' -> skipWhiteSpace tokenArray.[1..]
-        | '\t' -> skipWhiteSpace tokenArray.[1..]
-        | '\r' -> skipWhiteSpace tokenArray.[1..]
-        | _ -> tokenArray
+    let peek (chars: char []) =
+        match chars.Length = 1 with
+        | true -> '\u0004'
+        | false -> chars.[1]
 
-    let rec skipComment (tokenArray: char []) =
-        match tokenArray.[0] with
-        | '\n' -> tokenArray
-        | _ -> skipComment tokenArray.[1..]
+    let rec skipWhiteSpace (chars: char []) =
+        match chars.[0] with
+        | ' '
+        | '\t'
+        | '\r' -> skipWhiteSpace chars.[1..]
+        | _ -> chars
 
-    let skipOffset (token: Token) =
+    let rec skipComment (chars: char []) =
+        match chars.[0] with
+        | '\n' -> chars
+        | _ -> skipComment chars.[1..]
+
+    let skipOffset token =
+        let identifierOrSingle tokenType =
+            match tokenType > 100 || tokenType < 200 with
+            | true -> token.Text.Length
+            | false -> 1
+
         match token.Type with
         | TokenType.GTEQ
         | TokenType.LTEQ
         | TokenType.NOTEQ -> token.Text.Length
-        | TokenType.STRING -> token.Text.Length + 2
+        | TokenType.STRING -> token.Text.Length + 2 // " & "
         | TokenType.NUMBER -> token.Text.Length + 1
-        | _ ->
-            let tokenTypeRaw = (int) token.Type
-            match tokenTypeRaw > 100 || tokenTypeRaw < 200 with
-            | true -> token.Text.Length
-            | false -> 1
+        | _ -> identifierOrSingle (int token.Type)
 
-    let buildStringToken (tokenArray: char []) =
-        let endIndex = tokenArray |> Array.findIndex ((=) '\"')
-        let stringText = string tokenArray.[..endIndex - 1]
+    let private buildStringToken chars =
+        let endIndex = chars |> Array.findIndex ((=) '\"')
+        let stringText = string chars.[..endIndex - 1]
+        let invalidStringChars = [| '\r'; '\t'; '\\'; '%' |]
 
-        let invalidChars = [| '\r'; '\t'; '\\'; '%' |]
-
-        let stringInvalid =
-            invalidChars
+        let stringValid =
+            invalidStringChars
             |> Array.map stringText.Contains
             |> Array.sumBy (function
                 | true -> 1
-                | false -> 0) > 0
+                | false -> 0) = 0
 
-        match stringInvalid with
-        | true -> "Illegal character in string." |> abort
-        | false -> tokenFromString stringText TokenType.STRING
+        match stringValid with
+        | true -> tokenFromString stringText TokenType.STRING
+        | false -> "Illegal character in string." |> abort
 
-    let peek (tokenArray: char []) =
-        match tokenArray.Length = 1 with
-        | true -> '\u0004'
-        | false -> tokenArray.[1]
+    let private handleToken chars =
+        let currChar = nextChar chars
+        let nextChar = peek chars
 
-    let handleToken (tokenArray: char []) =
-        let currChar = nextChar tokenArray
-        let nextChar = peek tokenArray
+        let abortOnUnknown currChar =
+            sprintf "%s%d" "Unknown Token: " (int currChar)
+            |> abort
 
         match (currChar, nextChar) with
         | ('+', _) -> tokenFromChar currChar TokenType.PLUS
@@ -109,26 +83,26 @@ module Lexer =
         | ('<', _) -> tokenFromChar currChar TokenType.LT
         | ('!', '=') -> tokenFromString (string currChar + string nextChar) TokenType.NOTEQ
         | ('!', _) -> "Expected !=, got !" |> abort
-        | ('\"', _) -> buildStringToken tokenArray.[1..]
-        | _ ->
-            sprintf "%s%d" "Unknown Token: " (int currChar - int 0)
-            |> abort
+        | ('\"', _) -> buildStringToken chars.[1..]
+        | _ -> abortOnUnknown currChar
 
-    let rec getValue (chars: char []) newValue matchFunc =
-        let currentChar = chars.[0]
-        match matchFunc currentChar with
+    let rec private buildValueFromChars chars newValue matchFunc =
+        let currentChar = nextChar chars
+        let charMatch = matchFunc currentChar
+
+        match charMatch with
+        | true -> buildValueFromChars chars.[1..] (newValue + (string currentChar)) matchFunc
         | false -> newValue
-        | true -> getValue chars.[1..] (newValue + (string currentChar)) matchFunc
 
-    let handleNumberToken tokenArray =
-        let numberMatch c = Char.IsDigit c || c = '.'
-        let numberString = getValue tokenArray "" numberMatch
-        printf "%s\n" numberString
+    let private handleNumberToken chars =
+        let numberString =
+            buildValueFromChars chars "" (fun c -> Char.IsDigit c || c = '.')
+
         tokenFromString numberString TokenType.NUMBER
 
-    let handleAlphaToken tokenArray =
-        let alphaString = getValue tokenArray "" Char.IsLetter
-        printf "%s\n" alphaString
+    let private handleAlphaToken chars =
+        let alphaString =
+            buildValueFromChars chars "" Char.IsLetter
 
         let tokenType =
             match alphaString with
@@ -147,8 +121,8 @@ module Lexer =
 
         tokenFromString alphaString tokenType
 
-    let getToken (tokenArray: char []) =
-        let currChar = tokenArray.[0]
+    let getToken chars =
+        let currChar = nextChar chars
 
         let alphaNumTuple =
             (Char.IsLetter currChar, Char.IsDigit currChar)
@@ -159,4 +133,4 @@ module Lexer =
             | (true, _) -> handleAlphaToken
             | (_, true) -> handleNumberToken
 
-        handleFunc tokenArray
+        handleFunc chars
