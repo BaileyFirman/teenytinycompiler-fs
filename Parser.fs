@@ -24,10 +24,10 @@ module Parser =
     let private printString (tokens: Token []) =
         // We need to get a newline offset
         let z = string tokens.[1].Text
-        printfn "%A %d" z z.Length
         printf "STATEMENT-PRINT: %s\n" z
-        let trailingNewlinesCount = skipNewLines tokens.[2..] 1
-        trailingNewlinesCount + 2
+        // let trailingNewlinesCount = skipNewLines tokens.[2..] 0
+        // trailingNewlinesCount + 2
+        3
 
     let private printExpression tokens = 0
 

@@ -46,7 +46,7 @@ module LexerFuncs =
 
     let private buildStringToken chars =
         let endIndex = chars |> Array.findIndex ((=) '\"')
-        let stringText = string chars.[..endIndex - 1]
+        let stringText = String(chars.[..(endIndex - 1)])
         let invalidStringChars = [| '\r'; '\t'; '\\'; '%' |]
 
         let stringValid =
@@ -103,8 +103,6 @@ module LexerFuncs =
     let private handleAlphaToken chars =
         let alphaString =
             buildValueFromChars chars "" Char.IsLetter
-
-        printf "\n >>> %s <<<\n" alphaString
 
         let tokenType =
             match alphaString with

@@ -5,7 +5,6 @@ open Parser
 [<EntryPoint>]
 let main argv =
     let rec parseLoop (inputArray: char[]) (tokens: Token []) =
-        printf "%A" inputArray
         let removedWhitespace = skipWhiteSpace inputArray
 
         let removedComments =
@@ -34,26 +33,22 @@ let main argv =
     //     "IF+-123 foo*THEN/\n"
     // ]
 
-    // let testString = "IF+-123 foo*THEN/\n"
-    let testString = "PRINT \"hello, world!\"\nPRINT \"hello, world!\"\nPRINT \"hello, world!\"\u0004"
+    let testString =
+        "PRINT \"hello, world!\"\nPRINT \"hello, world!\"\nPRINT \"hello, world!\"\u0004"
 
     let parseString (str: string) =
         let arr = str.ToCharArray()
         let tokens = parseLoop arr [||]
-        // tokens
-        // |> Array.map (fun x -> x.Type)
-        // |> printfn "%A"
-        // tokens
-        // |> Array.map (fun x -> x.Text)
-        // |> printfn "%A"
+        tokens
+        |> Array.map (fun x -> x.Type)
+        |> printfn "%A"
         tokens
 
     let tokens = parseString testString
 
     let rec parseTokens (inputTokens: Token []) =
-        let currToken = inputTokens.[0].Type
         let skipCount = Parser.statement inputTokens
-        printfn "%d%d" skipCount inputTokens.Length
+        // printfn "%d%d" skipCount inputTokens.Length
         match skipCount >= inputTokens.Length with
         | true -> "" |> failwith
         | _ -> parseTokens inputTokens.[skipCount..]
