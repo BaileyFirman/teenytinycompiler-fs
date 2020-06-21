@@ -104,6 +104,8 @@ module LexerFuncs =
         let alphaString =
             buildValueFromChars chars "" Char.IsLetter
 
+        printf "\n >>> %s <<<\n" alphaString
+
         let tokenType =
             match alphaString with
             | "LABEL" -> TokenType.LABEL

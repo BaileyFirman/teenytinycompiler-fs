@@ -1,9 +1,11 @@
 open Lexer.LexerFuncs
 open Types.Tokens
+open Parser
 
 [<EntryPoint>]
 let main argv =
     let rec parseLoop (inputArray: char[]) (tokens: Token []) =
+        printf "%A" inputArray
         let removedWhitespace = skipWhiteSpace inputArray
 
         let removedComments =
@@ -22,22 +24,40 @@ let main argv =
         | '\u0004' -> tokens
         | _ -> parseLoop characterArray.[skipOffset..] newTokens
 
-    let testStrings = [
-        // "LET foobar = 123";
-        // "+- */\n";
-        // "+- */ >>= #a comment\n= !=\n0";
-        // "+- # This is a comment!\n */";
-        // "+- \"This is a string\" # This is a comment!\n */";
-        // "+-123 9.8654*/";
-        "IF+-123 foo*THEN/\n"
-    ]
+    // let testStrings = [
+    //     // "LET foobar = 123";
+    //     // "+- */\n";
+    //     // "+- */ >>= #a comment\n= !=\n0";
+    //     // "+- # This is a comment!\n */";
+    //     // "+- \"This is a string\" # This is a comment!\n */";
+    //     // "+-123 9.8654*/";
+    //     "IF+-123 foo*THEN/\n"
+    // ]
+
+    // let testString = "IF+-123 foo*THEN/\n"
+    let testString = "PRINT \"hello, world!\"\nPRINT \"hello, world!\"\nPRINT \"hello, world!\"\u0004"
 
     let parseString (str: string) =
         let arr = str.ToCharArray()
-        printf "\n%s\n" str
-        parseLoop arr [||]
-        |> Array.map (fun x -> x.Type)
-        |> printfn "%A"
+        let tokens = parseLoop arr [||]
+        // tokens
+        // |> Array.map (fun x -> x.Type)
+        // |> printfn "%A"
+        // tokens
+        // |> Array.map (fun x -> x.Text)
+        // |> printfn "%A"
+        tokens
 
-    testStrings |> List.iter parseString
+    let tokens = parseString testString
+
+    let rec parseTokens (inputTokens: Token []) =
+        let currToken = inputTokens.[0].Type
+        let skipCount = Parser.statement inputTokens
+        printfn "%d%d" skipCount inputTokens.Length
+        match skipCount >= inputTokens.Length with
+        | true -> "" |> failwith
+        | _ -> parseTokens inputTokens.[skipCount..]
+
+    parseTokens tokens
+    
     0
