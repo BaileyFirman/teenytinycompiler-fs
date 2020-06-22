@@ -4,6 +4,7 @@ open Parser
 
 [<EntryPoint>]
 let main argv =
+    printfn "%s" ">>> PROGRAM START"
     let rec parseLoop (inputArray: char[]) (tokens: Token []) =
         let removedWhitespace = skipWhiteSpace inputArray
 
@@ -39,9 +40,10 @@ let main argv =
     let parseString (str: string) =
         let arr = str.ToCharArray()
         let tokens = parseLoop arr [||]
+        printfn ">>> TOKENS"
         tokens
         |> Array.map (fun x -> x.Type)
-        |> printfn "%A"
+        |> printfn ">>> %A"
         tokens
 
     let tokens = parseString testString
@@ -50,9 +52,9 @@ let main argv =
         let skipCount = Parser.statement inputTokens
         // printfn "%d%d" skipCount inputTokens.Length
         match skipCount >= inputTokens.Length with
-        | true -> "" |> failwith
+        | true -> ">>> PROGRAM END"
         | _ -> parseTokens inputTokens.[skipCount..]
 
-    parseTokens tokens
-    
+    let final = parseTokens tokens
+    printf "%s" final
     0
