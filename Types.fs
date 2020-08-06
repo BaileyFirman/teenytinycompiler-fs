@@ -7,6 +7,7 @@ module Tokens =
         | NUMBER = 1
         | IDENT = 2
         | STRING = 3
+        | WHITESPACE = 4
         | LABEL = 101
         | GOTO = 102
         | PRINT = 103
