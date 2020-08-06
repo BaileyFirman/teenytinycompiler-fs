@@ -5,8 +5,6 @@ open System
 open Types.Tokens
 
 module BetterLexer =
-    // 1: Pass stream into lexer
-    // 2: Recurse with pointer
 
     let lex (characterStream: char []) =
 
@@ -15,10 +13,7 @@ module BetterLexer =
             let currentCharacter: char = characterStream.[streamPointer]
 
             let nextCharacter: char =
-                match currentCharacter with
-                | '\u0004' -> '\u0004'
-                | _ -> characterStream.[streamPointer + 1]
-
+                if currentCharacter = '\u0004' then '\u0004' else characterStream.[streamPointer + 1]
 
             let singleToken (tokenType: TokenType): Token =
                 { Text = (string currentCharacter)
@@ -35,16 +30,27 @@ module BetterLexer =
                     remainingCharacterStream
                     |> Array.findIndex ((=) '\"')
 
-                //printf "remianingStream %s ending %d" (String (remainingCharacterStream)) closingQuoteIndex
-
                 let stringCharsStream =
                     remainingCharacterStream.[..closingQuoteIndex]
 
                 { Text = String(stringCharsStream)
                   Type = tokenType }
 
-            printf "BetterLexer %c %c \n" currentCharacter nextCharacter
-            |> ignore
+            let commentToken (tokenType: TokenType) =
+                let remainingCharacterStream = characterStream.[(streamPointer + 1)..]
+
+                let closingCommentIndex =
+                    remainingCharacterStream
+                    |> Array.findIndex ((=) '\n')
+
+                let commentCharsStream =
+                    remainingCharacterStream.[..closingCommentIndex]
+
+                { Text = String(commentCharsStream)
+                  Type = tokenType }
+
+            // printf "BetterLexer %c %c \n" currentCharacter nextCharacter
+            // |> ignore
 
             let token =
                 match currentCharacter, nextCharacter with
@@ -66,13 +72,14 @@ module BetterLexer =
                 | '!', '=' -> multiToken TokenType.NOTEQ
                 | '!', _ -> "Expected !=" |> failwith
                 | '\"', _ -> stringToken TokenType.STRING
+                | '#', _ -> commentToken TokenType.COMMENT
                 | _, _ -> "Aborted Lexing" |> failwith
 
-            let newTokens = tokens |> Array.append [| token |]
+            let newTokens = [| token |] |> Array.append tokens
 
             let pointerOffset =
                 match token.Type with
-                | TokenType.STRING -> token.Text.Length + 1
+                | TokenType.STRING | TokenType.COMMENT -> token.Text.Length + 1
                 | _ -> token.Text.Length
 
             match token.Type with
