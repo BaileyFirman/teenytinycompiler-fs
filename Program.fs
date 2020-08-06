@@ -49,9 +49,19 @@ let main argv =
         |> printfn ">>> %A"
         tokens
 
-    let test = "+- \"This is a string\"\n */"
+    let test = "+- \"inner string\"*/\n\u0004"
 
-    let newTokens = lex2 (test.ToCharArray()) |> Array.map (fun x -> printf "%s" x.Text )
+
+    // testing only
+    let newTokens = lex2 (test.ToCharArray()) |> Array.map (fun x ->
+        let text =
+            match x.Text with
+            | "\n" -> "nl"
+            | _ -> x.Text
+
+        let tokenType = x.Type.ToString()
+        printf "BETTER: %s %s\n" text tokenType
+    )
 
     let tokens = parseString testString
 

@@ -14,7 +14,11 @@ module BetterLexer =
 
             let currentCharacter: char = characterStream.[streamPointer]
 
-            let nextCharacter: char = characterStream.[streamPointer + 1]
+            let nextCharacter: char =
+                match currentCharacter with
+                | '\u0004' -> '\u0004'
+                | _ -> characterStream.[streamPointer + 1]
+
 
             let singleToken (tokenType: TokenType): Token =
                 { Text = (string currentCharacter)
@@ -24,20 +28,23 @@ module BetterLexer =
                 { Text = (string currentCharacter) + (string nextCharacter)
                   Type = tokenType }
 
-            let stringToken =
+            let stringToken (tokenType: TokenType) =
                 let remainingCharacterStream = characterStream.[(streamPointer + 1)..]
 
                 let closingQuoteIndex =
                     remainingCharacterStream
                     |> Array.findIndex ((=) '\"')
 
+                //printf "remianingStream %s ending %d" (String (remainingCharacterStream)) closingQuoteIndex
+
                 let stringCharsStream =
                     remainingCharacterStream.[..closingQuoteIndex]
 
                 { Text = String(stringCharsStream)
-                  Type = TokenType.STRING }
+                  Type = tokenType }
 
-            printf "BetterLexer %c %c \n" currentCharacter nextCharacter |> ignore
+            printf "BetterLexer %c %c \n" currentCharacter nextCharacter
+            |> ignore
 
             let token =
                 match currentCharacter, nextCharacter with
@@ -58,13 +65,18 @@ module BetterLexer =
                 | '<', _ -> singleToken TokenType.LT
                 | '!', '=' -> multiToken TokenType.NOTEQ
                 | '!', _ -> "Expected !=" |> failwith
-                | '\"', _ -> stringToken
+                | '\"', _ -> stringToken TokenType.STRING
                 | _, _ -> "Aborted Lexing" |> failwith
 
             let newTokens = tokens |> Array.append [| token |]
 
+            let pointerOffset =
+                match token.Type with
+                | TokenType.STRING -> token.Text.Length + 1
+                | _ -> token.Text.Length
+
             match token.Type with
             | TokenType.EOF -> tokens
-            | _ -> lexLoop (streamPointer + token.Text.Length) newTokens
+            | _ -> lexLoop (streamPointer + pointerOffset) newTokens
 
         lexLoop 0 [||]
