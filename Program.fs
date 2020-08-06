@@ -1,10 +1,13 @@
 open Lexer.LexerFuncs
+open Lexer.BetterLexer
 open Types.Tokens
 open Parser
 
 [<EntryPoint>]
 let main argv =
     printfn "%s" ">>> PROGRAM START"
+    let lex2 (inputArray: char[]): Token[] = lex inputArray
+
     let rec parseLoop (inputArray: char[]) (tokens: Token []) =
         let removedWhitespace = skipWhiteSpace inputArray
 
@@ -45,6 +48,10 @@ let main argv =
         |> Array.map (fun x -> x.Type)
         |> printfn ">>> %A"
         tokens
+
+    let test = "+- \"This is a string\"\n */"
+
+    let newTokens = lex2 (test.ToCharArray()) |> Array.map (fun x -> printf "%s" x.Text )
 
     let tokens = parseString testString
 
