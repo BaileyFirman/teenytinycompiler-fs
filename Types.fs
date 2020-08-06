@@ -8,6 +8,7 @@ module Tokens =
         | IDENT = 2
         | STRING = 3
         | WHITESPACE = 4
+        | COMMENT = 5
         | LABEL = 101
         | GOTO = 102
         | PRINT = 103
