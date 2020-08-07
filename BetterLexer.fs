@@ -52,7 +52,7 @@ module BetterLexer =
             // printf "BetterLexer %c %c \n" currentCharacter nextCharacter
             // |> ignore
 
-            let token =
+            let symbolToken (fakeParam: string) =
                 match currentCharacter, nextCharacter with
                 | ' ', _
                 | '\t', _
@@ -75,11 +75,43 @@ module BetterLexer =
                 | '#', _ -> commentToken TokenType.COMMENT
                 | _, _ -> "Aborted Lexing" |> failwith
 
+            let isLetter char = Char.IsLetter char
+            let isDigit char = Char.IsDigit char
+            let isPoint char = char = '.'
+            // wrap these in a single
+            let rec characterToken (startPointer: int) (endPointer: int): Token =
+                let nextCharacter = characterStream.[endPointer]
+                match isLetter nextCharacter with
+                | true -> characterToken startPointer (endPointer + 1)
+                | false ->
+                    { Type = TokenType.STRING
+                      Text = String(characterStream.[startPointer..endPointer]) }
+            // wrap in a single
+            let rec numberToken (startPointer: int) (endPointer: int): Token =
+                let nextCharacter = characterStream.[endPointer]
+
+                let isNumber =
+                    isDigit nextCharacter || isPoint nextCharacter
+
+                match isNumber with
+                | true -> characterToken startPointer (endPointer + 1)
+                | false ->
+                    { Type = TokenType.STRING
+                      Text = String(characterStream.[startPointer..endPointer]) }
+
+
+            let token =
+                match isLetter currentCharacter, isDigit currentCharacter with
+                | false, false -> symbolToken ""
+                | true, _ -> characterToken streamPointer streamPointer
+                | _, true -> numberToken streamPointer streamPointer
+
             let newTokens = [| token |] |> Array.append tokens
 
             let pointerOffset =
                 match token.Type with
-                | TokenType.STRING | TokenType.COMMENT -> token.Text.Length + 1
+                | TokenType.STRING
+                | TokenType.COMMENT -> token.Text.Length + 1
                 | _ -> token.Text.Length
 
             match token.Type with
