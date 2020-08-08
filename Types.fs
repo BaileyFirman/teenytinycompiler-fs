@@ -32,4 +32,19 @@ module Tokens =
         | GT = 210
         | GTEQ = 304
 
+    let matchIdentifier string =
+        match string with
+        | "ENDIF" -> TokenType.ENDIF
+        | "ENDWHILE" -> TokenType.ENDWHILE
+        | "GOTO" -> TokenType.GOTO
+        | "IF" -> TokenType.IF
+        | "INPUT" -> TokenType.INPUT
+        | "LABEL" -> TokenType.LABEL
+        | "LET" -> TokenType.LET
+        | "PRINT" -> TokenType.PRINT
+        | "REPEAT" -> TokenType.REPEAT
+        | "THEN" -> TokenType.THEN
+        | "WHILE" -> TokenType.WHILE
+        | _ -> TokenType.IDENT
+
     type Token = { Text: string; Type: TokenType }

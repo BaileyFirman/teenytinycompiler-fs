@@ -28,35 +28,45 @@ let main argv =
         | '\u0004' -> tokens
         | _ -> parseLoop characterArray.[skipOffset..] newTokens
 
-    // let testStrings = [
-    //     // "LET foobar = 123";
-    //     // "+- */\n";
-    //     // "+- */ >>= #a comment\n= !=\n0";
-    //     // "+- # This is a comment!\n */";
-    //     // "+- \"This is a string\" # This is a comment!\n */";
-    //     // "+-123 9.8654*/";
-    //     "IF+-123 foo*THEN/\n"
-    // ]
+    let testStrings = [
+        // "LET foobar = 123";
+        // "+- */\n";
+        // "+- */ >>= #a comment\n= !=\n0";
+        // "+- # This is a comment!\n */";
+        // "+- \"This is a string\" # This is a comment!\n */";
+        // "+-123 9.8654*/";
+        // "IF+-123 foo*THEN/\n"
+        ]
 
-    let testString =
-        "PRINT \"hello, world!\"\nPRINT \"hello, world!\"\nPRINT \"hello, world!\"\u0004"
+        // | ' ', _
+        //         | '\t', _
+        //         | '\r', _ -> singleToken TokenType.WHITESPACE
+        //         | '+', _ -> singleToken TokenType.PLUS
+        //         | '-', _ -> singleToken TokenType.MINUS
+        //         | '*', _ -> singleToken TokenType.ASTERISK
+        //         | '/', _ -> singleToken TokenType.SLASH
+        //         | '\n', _ -> singleToken TokenType.NEWLINE
+        //         | '\u0004', _ -> singleToken TokenType.EOF
+        //         | '=', '=' -> multiToken TokenType.EQEQ
+        //         | '=', _ -> singleToken TokenType.EQ
+        //         | '>', '=' -> multiToken TokenType.GTEQ
+        //         | '>', _ -> singleToken TokenType.GT
+        //         | '<', '=' -> multiToken TokenType.LTEQ
+        //         | '<', _ -> singleToken TokenType.LT
+        //         | '!', '=' -> multiToken TokenType.NOTEQ
+        //         | '!', _ -> "Expected !=" |> failwith
+        //         | '\"', _ -> stringToken TokenType.STRING
+        //         | '#', _ -> commentToken TokenType.COMMENT
 
-    let parseString (str: string) =
-        let arr = str.ToCharArray()
-        let tokens = parseLoop arr [||]
-        // printfn ">>> TOKENS"
-        tokens
-        |> Array.map (fun x -> x.Type) |> ignore
-        // |> printfn ">>> %A"
-        tokens
+    let testString = " \t\r+-*/\n===>=><=< \"A String\" 1234 5.678 #Comment\n"
 
-    let test = "+- \"This is a string\" # This is a comment!\n */\n\u0004".ToCharArray()
+    let test = (testString + "\n\u0004").ToCharArray()
 
     // testing only
 
     let newTokens =
         lex2 test
-        |> Array.filter (fun x -> not (x.Type = TokenType.WHITESPACE || x.Type = TokenType.COMMENT))
+        //|> Array.filter (fun x -> not (x.Type = TokenType.WHITESPACE || x.Type = TokenType.COMMENT))
         |> Array.map (fun x ->
             let text =
                 match x.Text with
@@ -64,9 +74,9 @@ let main argv =
                 | _ -> x.Text
 
             let tokenType = x.Type.ToString()
-            printf "BETTER: %s\n" tokenType)
+            printf "BETTER: %s %s\n" tokenType text)
 
-    let tokens = parseString testString
+    //let tokens = parseString testString
 
     let rec parseTokens (inputTokens: Token []) =
         let skipCount = Parser.statement inputTokens

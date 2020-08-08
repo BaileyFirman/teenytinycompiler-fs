@@ -6,49 +6,45 @@ open Types.Tokens
 
 module BetterLexer =
 
-    let private tokenFromString text tokenType: Token = { Text = text; Type = tokenType }
-    let private tokenFromChar char tokenType: Token = tokenFromString (string char) tokenType
+    let private tokenFromString tokenType text = { Text = text; Type = tokenType }
+    let private tokenFromChar tokenType char = tokenFromString tokenType (string char)
     let private findChar arr char = arr |> Array.findIndex ((=) char)
+
     let private isLetter char = Char.IsLetter char
     let private isDigit char = Char.IsDigit char
     let private isPoint char = char = '.'
 
     let lex (characterStream: char []) =
 
-        let rec lexLoop (streamPointer: int) (tokens: Token []): Token [] =
+        let rec lexLoop streamPointer tokens: Token [] =
 
-            let currentCharacter: char = characterStream.[streamPointer]
+            let currentCharacter = characterStream.[streamPointer]
 
-            let nextCharacter: char =
+            let nextCharacter =
                 if currentCharacter = '\u0004' then '\u0004' else characterStream.[streamPointer + 1]
 
-            let singleToken tokenType: Token = tokenFromChar currentCharacter tokenType
+            let singleToken tokenType = tokenFromChar tokenType currentCharacter
 
             let multiToken tokenType =
                 let tokenText =
                     string currentCharacter + string nextCharacter
 
-                tokenFromString tokenText tokenType
+                tokenFromString tokenType tokenText
 
-            let stringToken tokenType =
+            let streamToken tokenType closingCharacter =
                 let remainingStream = characterStream.[(streamPointer + 1)..]
-                let closingQuoteIndex = findChar remainingStream '\"'
 
-                let stringCharsStream =
-                    String remainingStream.[..closingQuoteIndex]
+                let closingIndex =
+                    findChar remainingStream closingCharacter
 
-                tokenFromString stringCharsStream tokenType
+                tokenFromString tokenType
+                <| String remainingStream.[..closingIndex]
 
-            let commentToken (tokenType: TokenType) =
-                let remainingStream = characterStream.[(streamPointer + 1)..]
-                let closingCommentIndex = findChar remainingStream '\"'
+            let stringToken tokenType = streamToken tokenType '\"'
 
-                let commentCharsStream =
-                    String remainingStream.[..closingCommentIndex]
+            let commentToken tokenType = streamToken tokenType '\n'
 
-                tokenFromString commentCharsStream tokenType
-
-            let symbolToken p1 =
+            let symbolToken param =
                 match currentCharacter, nextCharacter with
                 | ' ', _
                 | '\t', _
@@ -71,37 +67,24 @@ module BetterLexer =
                 | '#', _ -> commentToken TokenType.COMMENT
                 | _, _ -> "Aborted Lexing" |> failwith
 
-            // wrap these in a single
-            let rec characterToken (startPointer: int) (endPointer: int): Token =
+            let buildCharacterToken startPointer =
+                let rec characterToken startPointer endPointer =
 
-                let tokenType str =
-                    match str with
-                    | "LABEL" -> TokenType.LABEL
-                    | "GOTO" -> TokenType.GOTO
-                    | "PRINT" -> TokenType.PRINT
-                    | "INPUT" -> TokenType.INPUT
-                    | "LET" -> TokenType.LET
-                    | "IF" -> TokenType.IF
-                    | "THEN" -> TokenType.THEN
-                    | "ENDIF" -> TokenType.ENDIF
-                    | "WHILE" -> TokenType.WHILE
-                    | "REPEAT" -> TokenType.REPEAT
-                    | "ENDWHILE" -> TokenType.ENDWHILE
-                    | _ -> TokenType.IDENT
+                    let nextCharacter = characterStream.[endPointer]
 
-                let nextCharacter = characterStream.[endPointer]
+                    match isLetter nextCharacter with
+                    | true -> characterToken startPointer (endPointer + 1)
+                    | false ->
+                        let stringText =
+                            String characterStream.[startPointer..endPointer - 1]
 
-                match isLetter nextCharacter with
-                | true -> characterToken startPointer (endPointer + 1)
-                | false ->
-                    let sText =
-                        String(characterStream.[startPointer..endPointer - 1])
+                        let tokenType = matchIdentifier stringText
+                        tokenFromString tokenType stringText
 
-                    { Type = tokenType sText; Text = sText }
+                characterToken startPointer (startPointer + 1)
 
-            // wrap in a single
             let buildNumberToken startPointer =
-                let rec decimalTokenLoop endPointer: Token =
+                let rec decimalTokenLoop endPointer =
                     let nextCharacter = characterStream.[endPointer]
 
                     match isDigit nextCharacter with
@@ -110,7 +93,7 @@ module BetterLexer =
                         let tokenText =
                             String characterStream.[startPointer..endPointer - 1]
 
-                        tokenFromString tokenText TokenType.NUMBER
+                        tokenFromString TokenType.NUMBER tokenText
 
                 let rec numberTokenLoop endPointer: Token =
                     let nextCharacter = characterStream.[endPointer]
@@ -125,14 +108,14 @@ module BetterLexer =
                             let tokenText =
                                 String characterStream.[startPointer..endPointer - 1]
 
-                            tokenFromString tokenText TokenType.NUMBER
+                            tokenFromString TokenType.NUMBER tokenText
 
                 numberTokenLoop (startPointer + 1)
 
             let token =
                 match isLetter currentCharacter, isDigit currentCharacter with
-                | false, false -> symbolToken ""
-                | true, _ -> characterToken streamPointer (streamPointer + 1)
+                | false, false -> symbolToken ()
+                | true, _ -> buildCharacterToken streamPointer
                 | _, true -> buildNumberToken streamPointer
 
             let newTokens = [| token |] |> Array.append tokens
@@ -141,7 +124,6 @@ module BetterLexer =
                 match token.Type with
                 | TokenType.STRING
                 | TokenType.COMMENT
-                | TokenType.NUMBER -> token.Text.Length + 1
                 | _ -> token.Text.Length
 
             match token.Type with
