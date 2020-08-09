@@ -1,7 +1,6 @@
 open Lexer.LexerFuncs
 open Lexer.BetterLexer
 open Types.Tokens
-open Parser
 open Microsoft.FSharp.Core
 
 [<EntryPoint>]
@@ -38,29 +37,9 @@ let main argv =
         // "IF+-123 foo*THEN/\n"
         ]
 
-        // | ' ', _
-        //         | '\t', _
-        //         | '\r', _ -> singleToken TokenType.WHITESPACE
-        //         | '+', _ -> singleToken TokenType.PLUS
-        //         | '-', _ -> singleToken TokenType.MINUS
-        //         | '*', _ -> singleToken TokenType.ASTERISK
-        //         | '/', _ -> singleToken TokenType.SLASH
-        //         | '\n', _ -> singleToken TokenType.NEWLINE
-        //         | '\u0004', _ -> singleToken TokenType.EOF
-        //         | '=', '=' -> multiToken TokenType.EQEQ
-        //         | '=', _ -> singleToken TokenType.EQ
-        //         | '>', '=' -> multiToken TokenType.GTEQ
-        //         | '>', _ -> singleToken TokenType.GT
-        //         | '<', '=' -> multiToken TokenType.LTEQ
-        //         | '<', _ -> singleToken TokenType.LT
-        //         | '!', '=' -> multiToken TokenType.NOTEQ
-        //         | '!', _ -> "Expected !=" |> failwith
-        //         | '\"', _ -> stringToken TokenType.STRING
-        //         | '#', _ -> commentToken TokenType.COMMENT
+    let testString = "#Comment\n\t\r+-*/\n===>=><=< \"A String\" 1234 5.6789 PRINT REPEAT\n\u0004"
 
-    let testString = " \t\r+-*/\n===>=><=< \"A String\" 1234 5.678 #Comment\n"
-
-    let test = (testString + "\n\u0004").ToCharArray()
+    let test = testString.ToCharArray()
 
     // testing only
 
@@ -75,16 +54,4 @@ let main argv =
 
             let tokenType = x.Type.ToString()
             printf "BETTER: %s %s\n" tokenType text)
-
-    //let tokens = parseString testString
-
-    let rec parseTokens (inputTokens: Token []) =
-        let skipCount = Parser.statement inputTokens
-        // printfn "%d%d" skipCount inputTokens.Length
-        match skipCount >= inputTokens.Length with
-        | true -> ">>> PROGRAM END"
-        | _ -> parseTokens inputTokens.[skipCount..]
-
-    // let final = parseTokens tokens
-    // printf "%s" final
     0
