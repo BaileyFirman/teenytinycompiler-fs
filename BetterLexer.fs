@@ -11,6 +11,9 @@ module BetterLexer =
     let private tokenFromChar tokenType char = tokenFromString tokenType (string char)
     let private findChar arr char = arr |> Array.findIndex ((=) char)
 
+    let private blankToken text: TokenType -> Token =
+        (fun tokenType -> { Text = text; Type = tokenType })
+
     // Character detection
     let private isLetter char = Char.IsLetter char
     let private isDigit char = Char.IsDigit char
@@ -22,7 +25,7 @@ module BetterLexer =
 
     // Data transformation
     let private charsToString (chars: char []) = String chars
-    let private combineChars (first: char) (second: char) = string first + string second
+    let private combineChars first second = string first + string second
 
     let lex (characterStream: char []) =
 
@@ -37,25 +40,28 @@ module BetterLexer =
             let singleToken tokenType = tokenFromChar tokenType currentCharacter
 
             let multiToken tokenType =
-                let tokenText =
-                    combineChars currentCharacter nextCharacter
+                combineChars currentCharacter nextCharacter
+                |> blankToken <| tokenType   
 
-                tokenFromString tokenType tokenText
+            let tokenFromRange sp ep tokenType =
+                let previousEp = previous ep
+                characterStream.[sp..previousEp]
+                |> charsToString
+                |> blankToken
+                <| tokenType
 
             let streamToken tokenType closingCharacter =
-                let remainingStream =
-                    let nextPointer = next streamPointer
-                    characterStream.[nextPointer..]
+                let nextPointer = next streamPointer
+                let remainingStream = characterStream.[nextPointer..]
 
-                let closingPointer =
+                let previousClosingPointer =
                     findChar remainingStream closingCharacter
+                    |> previous
 
-                let tokenText =
-                    let previousPointer = previous closingPointer
-                    remainingStream.[..previousPointer]
-                    |> charsToString
-
-                tokenFromString tokenType tokenText
+                remainingStream.[..previousClosingPointer]
+                |> charsToString
+                |> blankToken
+                <| tokenType
 
             let stringToken tokenType = streamToken tokenType '\"'
             let commentToken tokenType = streamToken tokenType '\n'
@@ -106,11 +112,7 @@ module BetterLexer =
                     let nextCharacter = characterStream.[endPointer]
 
                     match isDigit nextCharacter, isPoint nextCharacter with
-                    | false, false ->
-                        let tokenText =
-                            String characterStream.[startPointer..endPointer |> previous]
-
-                        tokenFromString TokenType.NUMBER tokenText
+                    | false, false -> tokenFromRange startPointer endPointer TokenType.NUMBER
                     | _, true ->
                         let nextCharAfterPointer = characterStream.[next endPointer]
                         match isDigit nextCharAfterPointer with
