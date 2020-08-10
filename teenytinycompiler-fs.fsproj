@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Compile Include="Types.fs" />
-    <Compile Include="BetterLexer.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Program.fs" />
