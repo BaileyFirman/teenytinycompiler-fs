@@ -10,21 +10,51 @@ module BetterParser =
     let parseTokenStream (tokenStream: Token []) =
         let getToken pointer = tokenStream.[pointer]
 
+        let rec newline pointer =
+            let currentKind = pointer |> getToken |> tokenKind
+            let nextPointer = next pointer
+            match currentKind with
+            | TokenType.NEWLINE ->
+                printf "PARSE: NEWLINE\n"
+                newline nextPointer
+            | _ -> pointer
+
+        let handlePrint pointer =
+            // Previous Token must have been a print
+            let currentToken = getToken pointer
+
+            let newPointer = 
+                match currentToken.Type with
+                | TokenType.STRING ->
+                    printf "PARSE: STATEMENT-PRINT\n"
+                    next pointer
+                | _ ->
+                    failwith "NOT IMPLEMENTED"
+                    // probably an expression
+
+            newline newPointer
+
         let rec parseLoop (stream: unit) streamPointer =
             let currentToken = getToken streamPointer
 
-            let currentType = tokenKind currentToken
-            printf "PARSE: %s\n" <| currentType.ToString()
+            let currentTokenType = tokenKind currentToken
+            // printf "PARSE: %s\n"
+            // <| currentTokenType.ToString()
 
             let nextToken =
                 match tokenKind currentToken with
                 | TokenType.EOF -> dummyToken
                 | _ -> streamPointer |> next |> getToken
-            
-            let newPointer = next streamPointer
+
+            let action () =
+                match currentTokenType with
+                | TokenType.PRINT -> handlePrint (next streamPointer)
+                | _ -> next streamPointer
+
+            let newPointer = action ()
 
             match tokenKind currentToken with
             | TokenType.EOF -> stream
-            | _ -> parseLoop stream newPointer 
+            | _ -> parseLoop stream newPointer
 
         parseLoop () 0
