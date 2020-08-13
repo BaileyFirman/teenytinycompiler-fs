@@ -5,8 +5,10 @@ open Microsoft.FSharp.Core
 
 [<EntryPoint>]
 let main argv =
+    // let testString =
+    //    "#Comment\n\t\r+-*/\n===>=><=< \"A String\" 1234 5.6789 PRINT REPEAT\n\u0004".ToCharArray()
     let testString =
-        "#Comment\n\t\r+-*/\n===>=><=< \"A String\" 1234 5.6789 PRINT REPEAT\n\u0004".ToCharArray()
+        "PRINT \"hello, world!\"\n\n\u0004".ToCharArray()
 
     let tokenisedStream =
         lexCharacterStream testString
@@ -20,7 +22,11 @@ let main argv =
             printf "LEX: %s %s\n" tokenType text
             x)
 
-    parseTokenStream tokenisedStream
+    let cleanTokenStream =
+        tokenisedStream
+        |> Array.filter (fun x -> (x.Type <> TokenType.WHITESPACE))
+
+    parseTokenStream cleanTokenStream
     |> ignore
 
     0
