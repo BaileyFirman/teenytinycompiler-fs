@@ -17,9 +17,10 @@ let main argv =
                 | _ -> x.Text
 
             let tokenType = x.Type.ToString()
-            printf "LEX: %s %s\n" tokenType text)
+            printf "LEX: %s %s\n" tokenType text
+            x)
 
     parseTokenStream tokenisedStream
     |> ignore
-    
+
     0
