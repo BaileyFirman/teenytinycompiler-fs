@@ -4,6 +4,7 @@ open Types.Tokens
 
 module BetterParser =
     let private tokenKind token = token.Type
+    let private tokenType token = token.Type
     let private next pointer = pointer + 1
     let private dummyToken = { Text = ""; Type = TokenType.EOF }
 
@@ -34,6 +35,28 @@ module BetterParser =
 
             newline newPointer
 
+        let handleComparison pointer =
+            next pointer
+
+        let handleStatement pointer =
+            next pointer
+
+        let handleIf pointer =
+            printf "PARSE: STATEMENT-IF"
+            let currentToken = getToken pointer
+            let nextPointer = next pointer
+            let comparisonPointer = handleComparison nextPointer
+
+            let endOfPointer = newline comparisonPointer
+
+            let rec statementCheck pointer =
+                match pointer |> getToken |> tokenType with
+                | TokenType.ENDIF -> next pointer
+                | _ -> handleStatement pointer
+            
+            statementCheck endOfPointer
+
+
         let rec parseLoop (stream: unit) streamPointer =
             let currentToken = getToken streamPointer
 
@@ -49,6 +72,7 @@ module BetterParser =
             let action () =
                 match currentTokenType with
                 | TokenType.PRINT -> handlePrint (next streamPointer)
+                | TokenType.IF -> handleIf (next streamPointer)
                 | _ -> next streamPointer
 
             let newPointer = action ()

@@ -8,7 +8,10 @@ let main argv =
     // let testString =
     //    "#Comment\n\t\r+-*/\n===>=><=< \"A String\" 1234 5.6789 PRINT REPEAT\n\u0004".ToCharArray()
     let testString =
-        "PRINT \"hello, world!\"\n\n\u0004".ToCharArray()
+        "PRINT \"hello, world!\"
+        PRINT \"second line\"
+        PRINT \"and a third...\"
+        \u0004".ToCharArray()
 
     let tokenisedStream =
         lexCharacterStream testString
