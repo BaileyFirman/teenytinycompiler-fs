@@ -10,16 +10,20 @@ module Parser =
 
     let next pointer = pointer + 1
 
-    let checkToken token tokenType =
-        token.Type = tokenType 
+    let checkTokenType currentTokenType tokenType =
+        currentTokenType = tokenType
 
     let parseTokenStream (tokenStream: Token []) =
+        let statement streamPointer =
+            0    
+
         let rec parseLoop streamPointer =
             let currentToken = getToken tokenStream streamPointer
-            let isEndOfFile =
-                currentToken
-                |> getType
-                |> checkToken TokenType.EOF
+            let currentTokenType = getType currentToken
+            let isEndOfStream = checkTokenType currentTokenType TokenType.EOF
 
-            match isEndOfFile with
-            | _ -> failwith "NO PARSING IMPLEMENTED" 
+            match isEndOfStream with
+            | true -> failwith "NO PARSING IMPLEMENTED"
+            | false -> statement streamPointer
+
+        parseLoop 0
