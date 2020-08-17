@@ -14,8 +14,28 @@ module Parser =
         currentTokenType = tokenType
 
     let parseTokenStream (tokenStream: Token []) =
-        let statement streamPointer =
-            0    
+        let expression = 1
+
+        let rec printStatement streamPointer =
+            // We know the previous token was print
+            // becuase we called into printStatement
+            printf "PARSE: STATEMENT-PRINT"
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+
+            let mainOffset =
+                match currentTokenType with
+                | TokenType.STRING -> 1
+                | _ -> expression
+            mainOffset
+
+        let rec statement streamPointer =
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+
+            match currentTokenType with
+            | TokenType.PRINT -> printStatement
+            | _ -> failwith "NOT IMPLEMENTED"
 
         let rec parseLoop streamPointer =
             let currentToken = getToken tokenStream streamPointer
