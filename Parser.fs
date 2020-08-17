@@ -14,6 +14,15 @@ module Parser =
         currentTokenType = tokenType
 
     let parseTokenStream (tokenStream: Token []) =
+        let rec newline streamPointer =
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+            let nextPointer = next streamPointer
+
+            match currentTokenType with
+            | TokenType.NEWLINE -> newline nextPointer
+            | _ -> nextPointer
+
         let expression = 1
 
         let rec printStatement streamPointer =
