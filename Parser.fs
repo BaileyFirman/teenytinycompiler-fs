@@ -3,43 +3,56 @@ namespace Parser
 open Types.Tokens
 
 module Parser =
-    let checkToken current kind = kind = current.Type
+    let getToken (tokenStream: Token[]) pointer: Token =
+        tokenStream.[pointer]
 
-    let checkPeek peek kind = kind = peek.Type
+    let getType (token: Token) = token.Type
 
-    let matchToken current kind =
-        match checkToken current kind with
-        | true -> true
-        | false ->
-            "Expected"
-            + kind.ToString()
-            + ", got "
-            + current.Type.ToString()
-            |> failwith
+    let next pointer = pointer + 1
 
-    let abort message = sprintf "Error. %s" message |> failwith
+    let checkTokenType currentTokenType tokenType =
+        currentTokenType = tokenType
 
-    let rec skipNewLines (tokens: Token []) count =
-        printfn "NEWLINE"
-        match checkToken tokens.[0] TokenType.NEWLINE with
-        | true -> count
-        | false -> skipNewLines tokens.[1..] count + 1
+    let parseTokenStream (tokenStream: Token []) =
+        let rec newline streamPointer =
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+            let nextPointer = next streamPointer
 
-    let private printString (tokens: Token []) =
-        let tokenText = tokens.[1].Text
-        printf "STATEMENT-PRINT: %s\n" tokenText
+            match currentTokenType with
+            | TokenType.NEWLINE -> newline nextPointer
+            | _ -> nextPointer
 
-        match tokens.[2..].Length = 0 with
-        | true -> 2
-        | false -> skipNewLines tokens.[2..] 3
+        let expression = 1
 
-    let private printExpression tokens = 0
+        let rec printStatement streamPointer =
+            // We know the previous token was print
+            // becuase we called into printStatement
+            printf "PARSE: STATEMENT-PRINT"
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
 
-    let statement (tokens: Token []) =
-        let firstToken = tokens.[0]
-        let secondToken = tokens.[1]
+            let mainOffset =
+                match currentTokenType with
+                | TokenType.STRING -> 1
+                | _ -> expression
+            mainOffset
 
-        match (firstToken.Type, secondToken.Type) with
-        | (TokenType.PRINT, TokenType.STRING) -> printString tokens
-        // | (TokenType.PRINT, _) -> printExpression tokens
-        | _ -> "OPPS" |> failwith
+        let rec statement streamPointer =
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+
+            match currentTokenType with
+            | TokenType.PRINT -> printStatement
+            | _ -> failwith "NOT IMPLEMENTED"
+
+        let rec parseLoop streamPointer =
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+            let isEndOfStream = checkTokenType currentTokenType TokenType.EOF
+
+            match isEndOfStream with
+            | true -> failwith "NO PARSING IMPLEMENTED"
+            | false -> statement streamPointer
+
+        parseLoop 0
