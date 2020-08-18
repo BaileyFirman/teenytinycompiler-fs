@@ -15,8 +15,6 @@ module Parser =
 
     let parseTokenStream (tokenStream: Token []) =
         let rec newline streamPointer =
-            // We need to assume newline is passed a
-            // pointer to the fist newline in a series
             printfn "PARSE: STATEMENT-NEWLINE"
             let nextStreamPointer = next streamPointer
             let nextToken = getToken tokenStream nextStreamPointer
@@ -29,8 +27,6 @@ module Parser =
         let expression = 1
 
         let rec printStatement streamPointer =
-            // We know the previous token was print
-            // becuase we called into printStatement
             printfn "PARSE: STATEMENT-PRINT"
             let currentToken = getToken tokenStream streamPointer
             let currentTokenType = getType currentToken
