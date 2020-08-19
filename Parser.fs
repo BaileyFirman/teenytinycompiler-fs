@@ -75,6 +75,36 @@ module Parser =
             match endTokenType with
             | TokenType.ENDIF -> statementsOffset + 1
             | _ -> failwith "EXPECTED ENDIF"
+        
+        and whileStatement streamPointer =
+            printfn "PARSE: STATEMENT-WHILE"
+            // Lets not handle a comparison
+            let comparisonOffsetPointer = comparison streamPointer
+            let comparisonOffsetToken = getToken tokenStream comparisonOffsetPointer
+            let comparisonOffsetTokenType = getType comparisonOffsetToken
+
+            let thenOffset =
+                match comparisonOffsetTokenType with
+                | TokenType.REPEAT -> matchThen comparisonOffsetPointer
+                | _ -> failwith "EXPECTED REPEAT"
+            
+            let newLineOffset = newline thenOffset
+
+            let rec statementLoop streamPointer =
+                let currentToken = getToken tokenStream streamPointer
+                let currentTokenType = getType currentToken
+                match currentTokenType with
+                | TokenType.ENDWHILE -> streamPointer
+                | _ -> statementLoop (statement streamPointer)
+
+            let statementsOffset = statementLoop newLineOffset
+
+            let endToken = getToken tokenStream statementsOffset
+            let endTokenType = getType endToken
+
+            match endTokenType with
+            | TokenType.ENDWHILE -> statementsOffset + 1
+            | _ -> failwith "EXPECTED ENDIF"
 
         and statement streamPointer =
             let currentToken = getToken tokenStream streamPointer
@@ -84,6 +114,7 @@ module Parser =
             match currentTokenType with
             | TokenType.PRINT -> printStatement nextStreamPointer
             | TokenType.IF -> ifStatement nextStreamPointer
+            | TokenType.WHILE -> whileStatement nextStreamPointer
             | _ -> failwith ("NOT IMPLEMENTED: " + (currentTokenType.ToString()))
 
         let rec parseLoop streamPointer =
