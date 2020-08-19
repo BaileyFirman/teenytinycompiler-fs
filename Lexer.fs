@@ -81,7 +81,7 @@ module Lexer =
                 | '\"', _ -> streamCharToken TokenType.STRING '\"'
                 | '\n', _ -> singleCharToken TokenType.NEWLINE
                 | '\u0004', _ -> singleCharToken TokenType.EOF
-                | '#', _ -> streamCharToken TokenType.STRING '\n'
+                | '#', _ -> streamCharToken TokenType.COMMENT '\n'
                 | '+', _ -> singleCharToken TokenType.PLUS
                 | '<', '=' -> doubleCharToken TokenType.LTEQ
                 | '<', _ -> singleCharToken TokenType.LT
