@@ -15,7 +15,6 @@ module Parser =
 
     let parseTokenStream (tokenStream: Token []) =
         let rec newline streamPointer =
-            printfn "PARSE: STATEMENT-NEWLINE"
             let nextStreamPointer = next streamPointer
             let nextToken = getToken tokenStream nextStreamPointer
             let nextTokenType = getType nextToken
@@ -39,30 +38,34 @@ module Parser =
             let newStreamPointer = streamPointer + mainOffset
             newline newStreamPointer
 
-        let comparison () =
+        let comparison streamPointer =
             printfn "PARSE: COMPARISON"
-            3
+            streamPointer + 3
+
+        let matchThen streamPointer =
+            printfn "PARSE: THEN"
+            streamPointer + 1
 
         let rec ifStatement streamPointer =
             printfn "PARSE: STATEMENT-IF"
-            let comparisonOffsetPointer = streamPointer + comparison ()
+            // Lets not handle a comparison
+            let comparisonOffsetPointer = comparison streamPointer
             let comparisonOffsetToken = getToken tokenStream comparisonOffsetPointer
             let comparisonOffsetTokenType = getType comparisonOffsetToken
 
             let thenOffset =
                 match comparisonOffsetTokenType with
-                | TokenType.THEN -> comparison ()
+                | TokenType.THEN -> matchThen comparisonOffsetPointer
                 | _ -> failwith "EXPECTED THEN"
             
-            let newLineOffset = newline (thenOffset + 1)
+            let newLineOffset = newline thenOffset
 
             let rec statementLoop streamPointer =
                 let currentToken = getToken tokenStream streamPointer
                 let currentTokenType = getType currentToken
                 match currentTokenType with
-                | TokenType.ENDIF -> next streamPointer
-                | _ ->
-                    statementLoop (statement streamPointer)
+                | TokenType.ENDIF -> streamPointer
+                | _ -> statementLoop (statement streamPointer)
 
             let statementsOffset = statementLoop newLineOffset
 
@@ -81,7 +84,7 @@ module Parser =
             match currentTokenType with
             | TokenType.PRINT -> printStatement nextStreamPointer
             | TokenType.IF -> ifStatement nextStreamPointer
-            | _ -> failwith "NOT IMPLEMENTED"
+            | _ -> failwith ("NOT IMPLEMENTED: " + (currentTokenType.ToString()))
 
         let rec parseLoop streamPointer =
             let currentToken = getToken tokenStream streamPointer
