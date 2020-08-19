@@ -39,13 +39,48 @@ module Parser =
             let newStreamPointer = streamPointer + mainOffset
             newline newStreamPointer
 
-        let rec statement streamPointer =
+        let comparison () =
+            printfn "PARSE: COMPARISON"
+            3
+
+        let rec ifStatement streamPointer =
+            printfn "PARSE: STATEMENT-IF"
+            let comparisonOffsetPointer = streamPointer + comparison ()
+            let comparisonOffsetToken = getToken tokenStream comparisonOffsetPointer
+            let comparisonOffsetTokenType = getType comparisonOffsetToken
+
+            let thenOffset =
+                match comparisonOffsetTokenType with
+                | TokenType.THEN -> comparison ()
+                | _ -> failwith "EXPECTED THEN"
+            
+            let newLineOffset = newline (thenOffset + 1)
+
+            let rec statementLoop streamPointer =
+                let currentToken = getToken tokenStream streamPointer
+                let currentTokenType = getType currentToken
+                match currentTokenType with
+                | TokenType.ENDIF -> next streamPointer
+                | _ ->
+                    statementLoop (statement streamPointer)
+
+            let statementsOffset = statementLoop newLineOffset
+
+            let endToken = getToken tokenStream statementsOffset
+            let endTokenType = getType endToken
+
+            match endTokenType with
+            | TokenType.ENDIF -> statementsOffset + 1
+            | _ -> failwith "EXPECTED ENDIF"
+
+        and statement streamPointer =
             let currentToken = getToken tokenStream streamPointer
             let currentTokenType = getType currentToken
             let nextStreamPointer = next streamPointer
             
             match currentTokenType with
             | TokenType.PRINT -> printStatement nextStreamPointer
+            | TokenType.IF -> ifStatement nextStreamPointer
             | _ -> failwith "NOT IMPLEMENTED"
 
         let rec parseLoop streamPointer =
