@@ -1,0 +1,3 @@
+LET variableA = 5
+LET variableB = variableA
+LET variableC = variableB
