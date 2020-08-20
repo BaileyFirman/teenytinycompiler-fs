@@ -46,6 +46,29 @@ module Parser =
             printfn "PARSE: THEN"
             streamPointer + 1
 
+        let labelStatement streamPointer =
+            printfn "PARSE: STATEMENT-LABEL"
+            let identityToken = getToken tokenStream streamPointer 
+            let identityTokenType = getType identityToken
+
+            let newlinePointer =
+                match identityTokenType with
+                | TokenType.IDENT -> next streamPointer
+                | _ -> failwith "EXPECTED IDENTIFIER"
+
+            newline newlinePointer
+
+
+
+        let gotoStatement streamPointer =
+            printfn "PARSE: STATEMENT-GOTO"
+            let identityToken = getToken tokenStream streamPointer 
+            let identityTokenType = getType identityToken
+
+            match identityTokenType with
+            | TokenType.IDENT -> next streamPointer
+            | _ -> failwith "EXPECTED IDENTIFIER"
+
         let rec ifStatement streamPointer =
             printfn "PARSE: STATEMENT-IF"
             // Lets not handle a comparison
@@ -115,6 +138,8 @@ module Parser =
             | TokenType.PRINT -> printStatement nextStreamPointer
             | TokenType.IF -> ifStatement nextStreamPointer
             | TokenType.WHILE -> whileStatement nextStreamPointer
+            | TokenType.LABEL -> labelStatement nextStreamPointer
+            | TokenType.GOTO -> gotoStatement nextStreamPointer
             | _ -> failwith ("NOT IMPLEMENTED: " + (currentTokenType.ToString()))
 
         let rec parseLoop streamPointer =
