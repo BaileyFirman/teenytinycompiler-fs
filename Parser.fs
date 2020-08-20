@@ -89,6 +89,15 @@ module Parser =
             | TokenType.IDENT -> next streamPointer
             | _ -> failwith "EXPECTED IDENTIFIER"
 
+        let inputStatement streamPointer =
+            printfn "PARSE: STATEMENT-INPUT"
+            let identityToken = getToken tokenStream streamPointer 
+            let identityTokenType = getType identityToken
+
+            match identityTokenType with
+            | TokenType.IDENT -> next streamPointer
+            | _ -> failwith "EXPECTED IDENTIFIER"
+
         let rec ifStatement streamPointer =
             printfn "PARSE: STATEMENT-IF"
             // Lets not handle a comparison
@@ -161,6 +170,7 @@ module Parser =
             | TokenType.LABEL -> labelStatement nextStreamPointer
             | TokenType.GOTO -> gotoStatement nextStreamPointer
             | TokenType.LET -> letStatement nextStreamPointer
+            | TokenType.INPUT -> inputStatement nextStreamPointer
             | _ -> failwith ("NOT IMPLEMENTED: " + (currentTokenType.ToString()))
 
         let rec parseLoop streamPointer =
