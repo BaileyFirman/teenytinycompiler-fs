@@ -47,4 +47,15 @@ module Tokens =
         | "WHILE" -> TokenType.WHILE
         | _ -> TokenType.IDENT
 
+    let isComparisonOperator (tokenType: TokenType) =
+        match tokenType with
+        | TokenType.GT
+        | TokenType.GTEQ
+        | TokenType.LT
+        | TokenType.LTEQ
+        | TokenType.EQEQ
+        | TokenType.NOTEQ -> true
+        | _ -> false
+
+
     type Token = { Text: string; Type: TokenType }
