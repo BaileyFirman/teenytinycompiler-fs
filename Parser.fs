@@ -38,16 +38,41 @@ module Parser =
             let newStreamPointer = streamPointer + mainOffset
             newline newStreamPointer
 
-        let comparison streamPointer =
-            printfn "PARSE: COMPARISON"
-            streamPointer + 3
-
-        let tempExpression streamPointer =
+        let unary streamPointer =
+            printf "PARSE: UNARY"
             next streamPointer
 
-        let comparison2 streamPointer =
+        let expression streamPointer =
+            printf "PARSE: TERM"
+            let unaryOffset = unary streamPointer
+
+            let rec termLoop pointer =
+                let currentToken = getToken tokenStream pointer
+                match currentToken.Type with
+                | TokenType.PLUS | TokenType.MINUS ->
+                    let nextPointer = next pointer
+                    let nextTermOffset = term nextPointer
+                    termLoop nextTermOffset
+                | _ -> next pointer
+            termLoop termOffset
+
+        let expression streamPointer =
+            printf "PARSE: EXPRESSION"
+            let termOffset = term streamPointer
+
+            let rec termLoop pointer =
+                let currentToken = getToken tokenStream pointer
+                match currentToken.Type with
+                | TokenType.PLUS | TokenType.MINUS ->
+                    let nextPointer = next pointer
+                    let nextTermOffset = term nextPointer
+                    termLoop nextTermOffset
+                | _ -> next pointer
+            termLoop termOffset
+
+        let comparison streamPointer =
             printf "PARSE: COMPARISON"
-            let operatorPointer = tempExpression streamPointer
+            let operatorPointer = expression streamPointer
             let operatorToken = getToken tokenStream operatorPointer
             let operatorTokenType = getType operatorToken
 
@@ -55,7 +80,7 @@ module Parser =
                 match isComparisonOperator operatorTokenType with
                 | true ->
                     let expressionPointer = next operatorPointer
-                    tempExpression expressionPointer
+                    expression expressionPointer
                 | false -> failwith "EXPECTED A COMPARISION OPERATOR"
 
             let rec additionalComparisonLoop pointer =
@@ -63,12 +88,10 @@ module Parser =
                 let nextTokenType = getType nextToken
                 match isComparisonOperator nextTokenType with
                 | true ->
-                    pointer |> next |> tempExpression |> additionalComparisonLoop
+                    pointer |> next |> expression |> additionalComparisonLoop
                 | _ -> pointer
 
             additionalComparisonLoop nextPointer
-
-            match nextPointer
 
         let matchThen streamPointer =
             printfn "PARSE: THEN"
