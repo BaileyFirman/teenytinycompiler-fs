@@ -15,6 +15,7 @@ module Parser =
 
     let parseTokenStream (tokenStream: Token []) =
         let rec newline streamPointer =
+            printfn "PARSE: NEWLINE"
             let nextStreamPointer = next streamPointer
             let nextToken = getToken tokenStream nextStreamPointer
             let nextTokenType = getType nextToken
@@ -53,7 +54,7 @@ module Parser =
                     let nextPointer = next pointer
                     let nextUnaryOffset = unary nextPointer
                     unaryLoop nextUnaryOffset 
-                | _ -> next pointer
+                | _ -> pointer
             unaryLoop unaryOffset
 
         let expression streamPointer =
@@ -67,7 +68,7 @@ module Parser =
                     let nextPointer = next pointer
                     let nextTermOffset = term nextPointer
                     termLoop nextTermOffset
-                | _ -> next pointer
+                | _ -> pointer
             termLoop termOffset
 
         let rec printStatement streamPointer =
@@ -140,9 +141,8 @@ module Parser =
                 | TokenType.EQ -> next assignmentTokenPointer
                 | _ -> failwith "EXPECTED EQ"
 
-            // we'll implement expression later
             let newlinePointer = expression expressionPointer
-            newline expressionPointer
+            newline newlinePointer
 
         let gotoStatement streamPointer =
             printfn "PARSE: STATEMENT-GOTO"
