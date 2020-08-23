@@ -23,27 +23,27 @@ module Parser =
             | TokenType.NEWLINE -> newline nextStreamPointer
             | _ -> nextStreamPointer
 
-        let expression = 1
-
-        let rec printStatement streamPointer =
-            printfn "PARSE: STATEMENT-PRINT"
+        let primary streamPointer =
             let currentToken = getToken tokenStream streamPointer
-            let currentTokenType = getType currentToken
+            printfn "PARSE: PRIMARY \"%s\"" currentToken.Text
 
-            let mainOffset =
-                match currentTokenType with
-                | TokenType.STRING -> 1
-                | _ -> expression
-
-            let newStreamPointer = streamPointer + mainOffset
-            newline newStreamPointer
+            match currentToken.Type with
+            | TokenType.NUMBER | TokenType.IDENT -> next streamPointer
+            | _ -> failwith ("UNEXPECTED TOKEN" + currentToken.Text)
 
         let unary streamPointer =
-            printf "PARSE: UNARY"
-            next streamPointer
+            printfn "PARSE: UNARY"
+            let optionalToken = getToken tokenStream streamPointer
+            
+            let newOffset =
+                match optionalToken.Type with
+                | TokenType.PLUS | TokenType.MINUS -> next streamPointer
+                | _ -> streamPointer  
+
+            primary newOffset
 
         let term streamPointer =
-            printf "PARSE: TERM"
+            printfn "PARSE: TERM"
             let unaryOffset = unary streamPointer
 
             let rec unaryLoop pointer =
@@ -57,7 +57,7 @@ module Parser =
             unaryLoop unaryOffset
 
         let expression streamPointer =
-            printf "PARSE: EXPRESSION"
+            printfn "PARSE: EXPRESSION"
             let termOffset = term streamPointer
 
             let rec termLoop pointer =
@@ -70,8 +70,21 @@ module Parser =
                 | _ -> next pointer
             termLoop termOffset
 
+        let rec printStatement streamPointer =
+            printfn "PARSE: STATEMENT-PRINT"
+            let currentToken = getToken tokenStream streamPointer
+            let currentTokenType = getType currentToken
+
+            let mainOffset =
+                match currentTokenType with
+                | TokenType.STRING -> 1
+                | _ -> expression streamPointer
+
+            let newStreamPointer = streamPointer + mainOffset
+            newline newStreamPointer
+
         let comparison streamPointer =
-            printf "PARSE: COMPARISON"
+            printfn "PARSE: COMPARISON"
             let operatorPointer = expression streamPointer
             let operatorToken = getToken tokenStream operatorPointer
             let operatorTokenType = getType operatorToken
@@ -128,7 +141,7 @@ module Parser =
                 | _ -> failwith "EXPECTED EQ"
 
             // we'll implement expression later
-            let newlinePointer = expressionPointer
+            let newlinePointer = expression expressionPointer
             newline expressionPointer
 
         let gotoStatement streamPointer =
