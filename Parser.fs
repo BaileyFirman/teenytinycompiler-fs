@@ -42,19 +42,19 @@ module Parser =
             printf "PARSE: UNARY"
             next streamPointer
 
-        let expression streamPointer =
+        let term streamPointer =
             printf "PARSE: TERM"
             let unaryOffset = unary streamPointer
 
-            let rec termLoop pointer =
+            let rec unaryLoop pointer =
                 let currentToken = getToken tokenStream pointer
                 match currentToken.Type with
-                | TokenType.PLUS | TokenType.MINUS ->
+                | TokenType.ASTERISK | TokenType.SLASH ->
                     let nextPointer = next pointer
-                    let nextTermOffset = term nextPointer
-                    termLoop nextTermOffset
+                    let nextUnaryOffset = unary nextPointer
+                    unaryLoop nextUnaryOffset 
                 | _ -> next pointer
-            termLoop termOffset
+            unaryLoop unaryOffset
 
         let expression streamPointer =
             printf "PARSE: EXPRESSION"
