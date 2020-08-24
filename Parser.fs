@@ -6,7 +6,9 @@ module Parser =
     let getType (token: Token) = token.Type
 
     let next pointer = pointer + 1
-    
+
+    let toString x =  x.ToString()
+
     let parseTokenStream (tokenStream: Token []) =
         let getToken pointer = tokenStream.[pointer]
 
@@ -177,7 +179,7 @@ module Parser =
                 let currentTokenType = getType currentToken
                 match currentTokenType with
                 | TokenType.ENDIF -> streamPointer
-                | _ -> statementLoop (statement streamPointer)
+                | _ -> statementLoop (parseStatement streamPointer)
 
             let statementsOffset = statementLoop newLineOffset
 
@@ -190,56 +192,52 @@ module Parser =
         
         and whileStatement streamPointer =
             printfn "PARSE: STATEMENT-WHILE"
-            // Lets not handle a comparison
-            let comparisonOffsetPointer = comparison streamPointer
-            let comparisonOffsetToken = getToken comparisonOffsetPointer
-            let comparisonOffsetTokenType = getType comparisonOffsetToken
+            let comparisonPointer = comparison streamPointer
+            let comparisonToken = getToken comparisonPointer
 
-            let thenOffset =
-                match comparisonOffsetTokenType with
-                | TokenType.REPEAT -> matchThen comparisonOffsetPointer
+            let thenPointer =
+                match comparisonToken.Type with
+                | TokenType.REPEAT -> matchThen comparisonPointer
                 | _ -> failwith "EXPECTED REPEAT"
             
-            let newLineOffset = newline thenOffset
+            let newlinePointer = newline thenPointer
 
-            let rec statementLoop streamPointer =
-                let currentToken = getToken streamPointer
-                let currentTokenType = getType currentToken
-                match currentTokenType with
-                | TokenType.ENDWHILE -> streamPointer
-                | _ -> statementLoop (statement streamPointer)
+            let rec whileLoop pointer =
+                let currentToken = getToken pointer
 
-            let statementsOffset = statementLoop newLineOffset
+                match currentToken.Type with
+                | TokenType.ENDWHILE -> pointer
+                | _ -> pointer |> parseStatement |> whileLoop
 
-            let endToken = getToken statementsOffset
-            let endTokenType = getType endToken
+            let statementPointer = whileLoop newlinePointer
 
-            match endTokenType with
-            | TokenType.ENDWHILE -> statementsOffset + 1
+            let endwhileToken = getToken statementPointer
+
+            match endwhileToken.Type with
+            | TokenType.ENDWHILE -> next statementPointer
             | _ -> failwith "EXPECTED ENDIF"
 
-        and statement streamPointer =
+        and parseStatement streamPointer =
             let currentToken = getToken streamPointer
-            let currentTokenType = getType currentToken
             let nextStreamPointer = next streamPointer
             
-            match currentTokenType with
+            match currentToken.Type with
             | TokenType.PRINT -> printStatement nextStreamPointer
             | TokenType.IF -> ifStatement nextStreamPointer
-            | TokenType.WHILE -> whileStatement nextStreamPointer
+            | TokenType.WHILE -> whileStatement streamPointer
             | TokenType.LABEL -> labelStatement nextStreamPointer
             | TokenType.GOTO -> gotoStatement nextStreamPointer
             | TokenType.LET -> letStatement nextStreamPointer
             | TokenType.INPUT -> inputStatement nextStreamPointer
-            | _ -> failwith ("NOT IMPLEMENTED: " + (currentTokenType.ToString()))
+            | _ -> failwith <| "NOT IMPLEMENTED: " + toString currentToken.Type
 
         let rec parseLoop streamPointer =
             let currentToken = getToken streamPointer
 
             match currentToken.Type with
-            | TokenType.EOF -> 0
-            | _ -> streamPointer |> statement |> parseLoop
+            | TokenType.EOF -> ()
+            | _ -> streamPointer |> parseStatement |> parseLoop
 
         printfn "PARSE: START PARSING"
-        parseLoop 0 |> ignore
+        parseLoop 0
         printfn "PARSE: END PARSING"
