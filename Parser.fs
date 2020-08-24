@@ -6,10 +6,7 @@ module Parser =
     let getType (token: Token) = token.Type
 
     let next pointer = pointer + 1
-
-    let checkTokenType currentTokenType tokenType =
-        currentTokenType = tokenType
-
+    
     let parseTokenStream (tokenStream: Token []) =
         let getToken pointer = tokenStream.[pointer]
 
@@ -238,15 +235,10 @@ module Parser =
 
         let rec parseLoop streamPointer =
             let currentToken = getToken streamPointer
-            let currentTokenType = getType currentToken
-            let isEndOfStream = checkTokenType currentTokenType TokenType.EOF
 
-            match isEndOfStream with
-            | true -> 0
-            | false ->
-                streamPointer
-                |> statement
-                |> parseLoop
+            match currentToken.Type with
+            | TokenType.EOF -> 0
+            | _ -> streamPointer |> statement |> parseLoop
 
         printfn "PARSE: START PARSING"
         parseLoop 0 |> ignore
