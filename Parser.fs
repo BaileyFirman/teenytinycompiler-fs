@@ -3,14 +3,15 @@ namespace Parser
 open Types.Tokens
 
 module Parser =
-    let getType (token: Token) = token.Type
+    let getType token = token.Type
 
     let next pointer = pointer + 1
 
-    let toString x =  x.ToString()
+    let toString x = x.ToString()
 
     let parseTokenStream (tokenStream: Token []) =
         let getToken pointer = tokenStream.[pointer]
+        let getNextToken pointer = tokenStream.[next pointer]
 
         let rec newline streamPointer =
             printfn "PARSE: NEWLINE"
@@ -69,18 +70,18 @@ module Parser =
                 | _ -> pointer
             termLoop termOffset
 
-        let rec printStatement streamPointer =
+        let printStatement streamPointer =
             printfn "PARSE: STATEMENT-PRINT"
-            let currentToken = getToken streamPointer
-            let currentTokenType = getType currentToken
+            let nextPointer = next streamPointer
+            let nextToken = getToken nextPointer
 
-            let mainOffset =
-                match currentTokenType with
-                | TokenType.STRING -> 1
-                | _ -> expression streamPointer
+            let printPointer =
+                match nextToken.Type with
+                | TokenType.STRING -> next nextPointer
+                | _ -> nextPointer + expression nextPointer
 
-            let newStreamPointer = streamPointer + mainOffset
-            newline newStreamPointer
+            // Remove newline once all parse statement functions complete
+            newline printPointer
 
         let comparison streamPointer =
             printfn "PARSE: COMPARISON"
@@ -162,37 +163,36 @@ module Parser =
 
         let rec ifStatement streamPointer =
             printfn "PARSE: STATEMENT-IF"
-            // Lets not handle a comparison
-            let comparisonOffsetPointer = comparison streamPointer
-            let comparisonOffsetToken = getToken comparisonOffsetPointer
-            let comparisonOffsetTokenType = getType comparisonOffsetToken
+            let nextPointer = next streamPointer
+            let comparisonPointer = comparison nextPointer
+            let comparisonToken = getToken comparisonPointer
 
-            let thenOffset =
-                match comparisonOffsetTokenType with
-                | TokenType.THEN -> matchThen comparisonOffsetPointer
+            let thenPointer =
+                match comparisonToken.Type with
+                | TokenType.THEN -> matchThen comparisonPointer
                 | _ -> failwith "EXPECTED THEN"
             
-            let newLineOffset = newline thenOffset
+            let newlinePointer = newline thenPointer
 
-            let rec statementLoop streamPointer =
-                let currentToken = getToken streamPointer
-                let currentTokenType = getType currentToken
-                match currentTokenType with
-                | TokenType.ENDIF -> streamPointer
-                | _ -> statementLoop (parseStatement streamPointer)
+            let rec ifLoop pointer =
+                let currentToken = getToken pointer
 
-            let statementsOffset = statementLoop newLineOffset
+                match currentToken.Type with
+                | TokenType.ENDIF -> pointer
+                | _ -> pointer |> parseStatement |> ifLoop
 
-            let endToken = getToken statementsOffset
-            let endTokenType = getType endToken
+            let statementPointer = ifLoop newlinePointer
 
-            match endTokenType with
-            | TokenType.ENDIF -> statementsOffset + 1
+            let endifToken = getToken statementPointer
+
+            match endifToken.Type with
+            | TokenType.ENDIF -> next statementPointer 
             | _ -> failwith "EXPECTED ENDIF"
         
         and whileStatement streamPointer =
             printfn "PARSE: STATEMENT-WHILE"
-            let comparisonPointer = comparison streamPointer
+            let nextPointer = next streamPointer
+            let comparisonPointer = comparison nextPointer
             let comparisonToken = getToken comparisonPointer
 
             let thenPointer =
@@ -215,15 +215,15 @@ module Parser =
 
             match endwhileToken.Type with
             | TokenType.ENDWHILE -> next statementPointer
-            | _ -> failwith "EXPECTED ENDIF"
+            | _ -> failwith "EXPECTED ENDWHILE"
 
         and parseStatement streamPointer =
             let currentToken = getToken streamPointer
             let nextStreamPointer = next streamPointer
             
             match currentToken.Type with
-            | TokenType.PRINT -> printStatement nextStreamPointer
-            | TokenType.IF -> ifStatement nextStreamPointer
+            | TokenType.PRINT -> printStatement streamPointer
+            | TokenType.IF -> ifStatement streamPointer
             | TokenType.WHILE -> whileStatement streamPointer
             | TokenType.LABEL -> labelStatement nextStreamPointer
             | TokenType.GOTO -> gotoStatement nextStreamPointer
