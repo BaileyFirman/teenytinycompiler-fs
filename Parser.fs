@@ -1,6 +1,7 @@
 namespace Parser
 
 open Types.Tokens
+open System.Collections.Generic
 
 module Parser =
     let getType token = token.Type
@@ -10,35 +11,47 @@ module Parser =
     let toString x = x.ToString()
 
     let parseTokenStream (tokenStream: Token []) =
+        let symbols = new List<string>()
+        let labelsDeclared = new List<string>()
+        let labelsGotoed = new List<string>()
+
         let getToken pointer = tokenStream.[pointer]
-        let getNextToken pointer = tokenStream.[next pointer]
+        let getNextToken pointer = pointer |> next |> getToken
 
         let rec newline streamPointer =
             printfn "PARSE: NEWLINE"
-            let nextStreamPointer = next streamPointer
-            let nextToken = getToken nextStreamPointer
-            let nextTokenType = getType nextToken
+            let nextPointer = next streamPointer
+            let nextToken = getToken nextPointer
 
-            match nextTokenType with
-            | TokenType.NEWLINE -> newline nextStreamPointer
-            | _ -> nextStreamPointer
+            match nextToken.Type with
+            | TokenType.NEWLINE -> newline nextPointer
+            | _ -> nextPointer
 
         let primary streamPointer =
             let currentToken = getToken streamPointer
             printfn "PARSE: PRIMARY \"%s\"" currentToken.Text
 
             match currentToken.Type with
-            | TokenType.NUMBER | TokenType.IDENT -> next streamPointer
+            | TokenType.NUMBER
+            | TokenType.IDENT ->
+                match symbols.Contains currentToken.Text with
+                | true -> ()
+                | _ ->
+                    failwith
+                    <| "Referencing variable before assignment: "
+                    + currentToken.Text
+                next streamPointer
             | _ -> failwith ("UNEXPECTED TOKEN" + currentToken.Text)
 
         let unary streamPointer =
             printfn "PARSE: UNARY"
             let optionalToken = getToken streamPointer
-            
+
             let newOffset =
                 match optionalToken.Type with
-                | TokenType.PLUS | TokenType.MINUS -> next streamPointer
-                | _ -> streamPointer  
+                | TokenType.PLUS
+                | TokenType.MINUS -> next streamPointer
+                | _ -> streamPointer
 
             primary newOffset
 
@@ -49,11 +62,13 @@ module Parser =
             let rec unaryLoop pointer =
                 let currentToken = getToken pointer
                 match currentToken.Type with
-                | TokenType.ASTERISK | TokenType.SLASH ->
+                | TokenType.ASTERISK
+                | TokenType.SLASH ->
                     let nextPointer = next pointer
                     let nextUnaryOffset = unary nextPointer
-                    unaryLoop nextUnaryOffset 
+                    unaryLoop nextUnaryOffset
                 | _ -> pointer
+
             unaryLoop unaryOffset
 
         let expression streamPointer =
@@ -63,11 +78,13 @@ module Parser =
             let rec termLoop pointer =
                 let currentToken = getToken pointer
                 match currentToken.Type with
-                | TokenType.PLUS | TokenType.MINUS ->
+                | TokenType.PLUS
+                | TokenType.MINUS ->
                     let nextPointer = next pointer
                     let nextTermOffset = term nextPointer
                     termLoop nextTermOffset
                 | _ -> pointer
+
             termLoop termOffset
 
         let printStatement streamPointer =
@@ -78,7 +95,7 @@ module Parser =
             let printPointer =
                 match nextToken.Type with
                 | TokenType.STRING -> next nextPointer
-                | _ -> nextPointer + expression nextPointer
+                | _ -> expression nextPointer
 
             // Remove newline once all parse statement functions complete
             newline printPointer
@@ -101,65 +118,90 @@ module Parser =
                 let nextTokenType = getType nextToken
                 match isComparisonOperator nextTokenType with
                 | true ->
-                    pointer |> next |> expression |> additionalComparisonLoop
+                    pointer
+                    |> next
+                    |> expression
+                    |> additionalComparisonLoop
                 | _ -> pointer
 
             additionalComparisonLoop nextPointer
 
         let matchThen streamPointer =
             printfn "PARSE: THEN"
-            streamPointer + 1
+            next streamPointer
+
+        let matchRepeat streamPointer =
+            printfn "PARSE: REPEAT"
+            next streamPointer
 
         let labelStatement streamPointer =
             printfn "PARSE: STATEMENT-LABEL"
-            let identityToken = getToken streamPointer 
-            let identityTokenType = getType identityToken
+            let nextPointer = next streamPointer
+            let identityToken = getToken nextPointer
+
+            match labelsDeclared.Contains identityToken.Text with
+            | true ->
+                failwith
+                <| "Label already exists: "
+                + identityToken.Text
+            | false -> labelsDeclared.Add identityToken.Text
 
             let newlinePointer =
-                match identityTokenType with
-                | TokenType.IDENT -> next streamPointer
+                match identityToken.Type with
+                | TokenType.IDENT -> next nextPointer
                 | _ -> failwith "EXPECTED IDENTIFIER"
 
             newline newlinePointer
 
         let letStatement streamPointer =
             printfn "PARSE: STATEMENT-LET"
-            let identityToken = getToken streamPointer 
-            let identityTokenType = getType identityToken
+            let nextPointer = next streamPointer
+            let identityToken = getToken nextPointer
 
-            let assignmentTokenPointer =
-                match identityTokenType with
-                | TokenType.IDENT -> next streamPointer
+            match symbols.Contains identityToken.Text with
+            | true -> ()
+            | false -> labelsDeclared.Add identityToken.Text
+
+            let assignmentPointer =
+                match identityToken.Type with
+                | TokenType.IDENT -> next nextPointer
                 | _ -> failwith "EXPECTED IDENTIFIER"
 
-            let expressionToken = getToken assignmentTokenPointer 
-            let expressionTokenType = getType expressionToken
+            let expressionToken = getToken assignmentPointer
 
             let expressionPointer =
-                match expressionTokenType with
-                | TokenType.EQ -> next assignmentTokenPointer
+                match expressionToken.Type with
+                | TokenType.EQ -> next assignmentPointer
                 | _ -> failwith "EXPECTED EQ"
 
-            let newlinePointer = expression expressionPointer
-            newline newlinePointer
+            expressionPointer |> expression |> newline
 
         let gotoStatement streamPointer =
             printfn "PARSE: STATEMENT-GOTO"
-            let identityToken = getToken streamPointer 
-            let identityTokenType = getType identityToken
+            let nextPointer = next streamPointer
+            let identityToken = getToken nextPointer
 
-            match identityTokenType with
-            | TokenType.IDENT -> next streamPointer
+            labelsDeclared.Add(identityToken.Text)
+
+            match identityToken.Type with
+            | TokenType.IDENT -> next nextPointer
             | _ -> failwith "EXPECTED IDENTIFIER"
 
         let inputStatement streamPointer =
             printfn "PARSE: STATEMENT-INPUT"
-            let identityToken = getToken streamPointer 
-            let identityTokenType = getType identityToken
+            let nextPointer = next streamPointer
+            let identityToken = getToken nextPointer
 
-            match identityTokenType with
-            | TokenType.IDENT -> next streamPointer
-            | _ -> failwith "EXPECTED IDENTIFIER"
+            match symbols.Contains identityToken.Text with
+            | true -> ()
+            | false -> labelsDeclared.Add identityToken.Text
+
+            let newlinePointer =
+                match identityToken.Type with
+                | TokenType.IDENT -> next nextPointer
+                | _ -> failwith "EXPECTED IDENTIFIER"
+
+            newline newlinePointer
 
         let rec ifStatement streamPointer =
             printfn "PARSE: STATEMENT-IF"
@@ -171,7 +213,7 @@ module Parser =
                 match comparisonToken.Type with
                 | TokenType.THEN -> matchThen comparisonPointer
                 | _ -> failwith "EXPECTED THEN"
-            
+
             let newlinePointer = newline thenPointer
 
             let rec ifLoop pointer =
@@ -186,9 +228,9 @@ module Parser =
             let endifToken = getToken statementPointer
 
             match endifToken.Type with
-            | TokenType.ENDIF -> next statementPointer 
+            | TokenType.ENDIF -> next statementPointer
             | _ -> failwith "EXPECTED ENDIF"
-        
+
         and whileStatement streamPointer =
             printfn "PARSE: STATEMENT-WHILE"
             let nextPointer = next streamPointer
@@ -197,9 +239,9 @@ module Parser =
 
             let thenPointer =
                 match comparisonToken.Type with
-                | TokenType.REPEAT -> matchThen comparisonPointer
+                | TokenType.REPEAT -> matchRepeat comparisonPointer
                 | _ -> failwith "EXPECTED REPEAT"
-            
+
             let newlinePointer = newline thenPointer
 
             let rec whileLoop pointer =
@@ -219,17 +261,22 @@ module Parser =
 
         and parseStatement streamPointer =
             let currentToken = getToken streamPointer
-            let nextStreamPointer = next streamPointer
-            
-            match currentToken.Type with
-            | TokenType.PRINT -> printStatement streamPointer
-            | TokenType.IF -> ifStatement streamPointer
-            | TokenType.WHILE -> whileStatement streamPointer
-            | TokenType.LABEL -> labelStatement nextStreamPointer
-            | TokenType.GOTO -> gotoStatement nextStreamPointer
-            | TokenType.LET -> letStatement nextStreamPointer
-            | TokenType.INPUT -> inputStatement nextStreamPointer
-            | _ -> failwith <| "NOT IMPLEMENTED: " + toString currentToken.Type
+
+            let statementFunction =
+                match currentToken.Type with
+                | TokenType.PRINT -> printStatement
+                | TokenType.IF -> ifStatement
+                | TokenType.WHILE -> whileStatement
+                | TokenType.LABEL -> labelStatement
+                | TokenType.GOTO -> gotoStatement
+                | TokenType.LET -> letStatement
+                | TokenType.INPUT -> inputStatement
+                | _ ->
+                    failwith
+                    <| "NOT IMPLEMENTED: "
+                    + toString currentToken.Type
+
+            statementFunction streamPointer
 
         let rec parseLoop streamPointer =
             let currentToken = getToken streamPointer
@@ -240,4 +287,13 @@ module Parser =
 
         printfn "PARSE: START PARSING"
         parseLoop 0
+        labelsGotoed
+        |> Seq.forall (fun x ->
+            match labelsDeclared.Contains x with
+            | true -> true
+            | _ ->
+                failwith
+                <| "Attempting to GOTO to undeclared label: "
+                + x)
+        |> ignore
         printfn "PARSE: END PARSING"
