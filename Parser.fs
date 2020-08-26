@@ -346,3 +346,4 @@ module Parser =
         emitter.EmitLine("}")
         emitter.WriteFile
         printfn "PARSE: END PARSING"
+        emitter.EmitFile ()

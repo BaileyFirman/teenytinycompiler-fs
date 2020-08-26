@@ -24,6 +24,18 @@ module Lexer =
     let private combineChars first second = string first + string second
     let private appendItem array item = Array.append array [| item |]
 
+    let printTokenStream tokenStream =
+        tokenStream
+        |> Array.map (fun x ->
+                let text =
+                    match x.Text with
+                    | "\n" -> "nl"
+                    | _ -> x.Text
+
+                let tokenType = x.Type.ToString()
+                printf "LEX: %s %s\n" tokenType text
+                x)
+
     // Token creation
     let private tokenFromString tokenType text = { Text = text; Type = tokenType }
 
@@ -89,7 +101,7 @@ module Lexer =
                 | '=', _ -> singleCharToken TokenType.EQ
                 | '>', '=' -> doubleCharToken TokenType.GTEQ
                 | '>', _ -> singleCharToken TokenType.GT
-                | _, _ -> "Aborted Lexing" |> failwith
+                | _, _ -> ("Aborted Lexing" + currentCharacter.ToString()) |> failwith
 
             let buildCharacterToken startPointer: Token =
                 let streamToToken sp ep =
@@ -151,4 +163,6 @@ module Lexer =
             | TokenType.EOF -> newTokens
             | _ -> lexLoop newTokens pointerOffset
 
-        lexLoop [||] 0
+        let result = lexLoop [||] 0 |> Array.filter (fun x -> (x.Type <> TokenType.WHITESPACE))
+        printTokenStream result |> ignore
+        result

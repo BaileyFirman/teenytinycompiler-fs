@@ -11,6 +11,11 @@ module Emitter =
         member this.Emit code = outputCode <- outputCode + code
         member this.EmitLine code = outputCode <- outputCode + code + "\n"
         member this.HeaderLine code = outputHeader <- (code + "\n") :: outputHeader
+        member this.EmitFile () =
+            let distinctHeaders = outputHeader |> Seq.distinct |> Seq.toList |> List.rev
+            let fileContent = (String.concat "" distinctHeaders)
+            fileContent + outputCode
+
         member this.WriteFile =
             let distinctHeaders = outputHeader |> Seq.distinct |> Seq.toList |> List.rev
             let fileContent = (String.concat "" distinctHeaders)
