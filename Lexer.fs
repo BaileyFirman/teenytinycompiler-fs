@@ -27,21 +27,23 @@ module Lexer =
     let printTokenStream tokenStream =
         tokenStream
         |> Array.map (fun x ->
-                let text =
-                    match x.Text with
-                    | "\n" -> "nl"
-                    | _ -> x.Text
+            let text =
+                match x.Text with
+                | "\n" -> "nl"
+                | "\t" -> "tab"
+                | "\r" -> "return"
+                | _ -> x.Text
 
-                let tokenType = x.Type.ToString()
-                printf "LEX: %s %s\n" tokenType text
-                x)
+            let tokenType = x.Type.ToString()
+            printf "LEX: %s %s\n" tokenType text
+            x)
 
     // Token creation
     let private tokenFromString tokenType text = { Text = text; Type = tokenType }
 
     let lexCharacterStream (characterStream: char []): Token [] =
 
-        let rec lexLoop tokens streamPointer: Token [] =
+        let rec lexLoop (tokenList: list<Token>) streamPointer =
             let currentCharacter = characterStream.[streamPointer]
 
             let nextCharacter: char =
@@ -84,24 +86,26 @@ module Lexer =
                 match currentCharacter, nextCharacter with
                 | ' ', _
                 | '\t', _
-                | '\r', _ -> singleCharToken TokenType.WHITESPACE
-                | '-', _ -> singleCharToken TokenType.MINUS
-                | '!', '=' -> doubleCharToken TokenType.NOTEQ
+                | '\r', _ -> singleCharToken WHITESPACE
+                | '-', _ -> singleCharToken MINUS
+                | '!', '=' -> doubleCharToken NOTEQ
                 | '!', _ -> "Expected !=" |> failwith
-                | '*', _ -> singleCharToken TokenType.ASTERISK
-                | '/', _ -> singleCharToken TokenType.SLASH
-                | '\"', _ -> streamCharToken TokenType.STRING '\"'
-                | '\n', _ -> singleCharToken TokenType.NEWLINE
-                | '\u0004', _ -> singleCharToken TokenType.EOF
-                | '#', _ -> streamCharToken TokenType.COMMENT '\n'
-                | '+', _ -> singleCharToken TokenType.PLUS
-                | '<', '=' -> doubleCharToken TokenType.LTEQ
-                | '<', _ -> singleCharToken TokenType.LT
-                | '=', '=' -> doubleCharToken TokenType.EQEQ
-                | '=', _ -> singleCharToken TokenType.EQ
-                | '>', '=' -> doubleCharToken TokenType.GTEQ
-                | '>', _ -> singleCharToken TokenType.GT
-                | _, _ -> ("Aborted Lexing" + currentCharacter.ToString()) |> failwith
+                | '*', _ -> singleCharToken ASTERISK
+                | '/', _ -> singleCharToken SLASH
+                | '\"', _ -> streamCharToken STRING '\"'
+                | '\n', _ -> singleCharToken NEWLINE
+                | '\u0004', _ -> singleCharToken EOF
+                | '#', _ -> streamCharToken COMMENT '\n'
+                | '+', _ -> singleCharToken PLUS
+                | '<', '=' -> doubleCharToken LTEQ
+                | '<', _ -> singleCharToken LT
+                | '=', '=' -> doubleCharToken EQEQ
+                | '=', _ -> singleCharToken EQ
+                | '>', '=' -> doubleCharToken GTEQ
+                | '>', _ -> singleCharToken GT
+                | _, _ ->
+                    ("Aborted Lexing" + currentCharacter.ToString())
+                    |> failwith
 
             let buildCharacterToken startPointer: Token =
                 let streamToToken sp ep =
@@ -126,7 +130,7 @@ module Lexer =
                     let nextCharacter = characterStream.[endPointer]
 
                     match isDigit nextCharacter, isPoint nextCharacter with
-                    | false, false -> tokenFromRange startPointer endPointer TokenType.NUMBER
+                    | false, false -> tokenFromRange startPointer endPointer NUMBER
                     | _, true ->
                         let nextCharAfterPointer = characterStream.[next endPointer]
                         match isDigit nextCharAfterPointer with
@@ -142,27 +146,27 @@ module Lexer =
                 | true, _ -> buildCharacterToken streamPointer
                 | _, true -> buildNumberToken streamPointer
 
-            let newTokens = appendItem tokens newToken
+            let newTokens = newToken :: tokenList
 
-            let offsetFromToken =
-                let textLength = newToken.Text.Length
-
-                let offset =
+            let nextPointer =
+                let tokenLength = newToken.Text.Length
+                let typeOffset =
                     match newToken.Type with
-                    | TokenType.COMMENT
-                    | TokenType.STRING -> 2
+                    | COMMENT | STRING -> 2
                     | _ -> 0
-
-                textLength + offset
-
-            let pointerOffset =
-                let tokenOffset = offsetFromToken
-                streamPointer + tokenOffset
+                streamPointer + tokenLength + typeOffset
 
             match newToken.Type with
-            | TokenType.EOF -> newTokens
-            | _ -> lexLoop newTokens pointerOffset
+            | EOF -> newTokens
+            | _ -> lexLoop newTokens nextPointer
 
-        let result = lexLoop [||] 0 |> Array.filter (fun x -> (x.Type <> TokenType.WHITESPACE))
+        let result =
+            lexLoop [] 0
+            |> Seq.filter (fun x -> (x.Type <> WHITESPACE))
+            |> Seq.toList
+            |> List.rev
+            |> List.toSeq
+            |> Seq.toArray
+
         printTokenStream result |> ignore
         result

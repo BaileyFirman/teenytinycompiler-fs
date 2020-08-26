@@ -2,59 +2,59 @@ namespace Types
 
 module Tokens =
     type TokenType =
-        | EOF = -1
-        | NEWLINE = 0
-        | NUMBER = 1
-        | IDENT = 2
-        | STRING = 3
-        | WHITESPACE = 4
-        | COMMENT = 5
-        | LABEL = 101
-        | GOTO = 102
-        | PRINT = 103
-        | INPUT = 104
-        | LET = 105
-        | IF = 106
-        | THEN = 107
-        | ENDIF = 108
-        | WHILE = 109
-        | REPEAT = 110
-        | ENDWHILE = 111
-        | EQ = 201
-        | PLUS = 202
-        | MINUS = 203
-        | ASTERISK = 204
-        | SLASH = 205
-        | EQEQ = 300
-        | NOTEQ = 301
-        | LT = 208
-        | LTEQ = 302
-        | GT = 210
-        | GTEQ = 304
+        EOF
+        | NEWLINE
+        | NUMBER
+        | IDENT
+        | STRING
+        | WHITESPACE
+        | COMMENT
+        | LABEL
+        | GOTO
+        | PRINT
+        | INPUT
+        | LET
+        | IF
+        | THEN
+        | ENDIF
+        | WHILE
+        | REPEAT
+        | ENDWHILE
+        | EQ
+        | PLUS
+        | MINUS
+        | ASTERISK
+        | SLASH
+        | EQEQ
+        | NOTEQ
+        | LT
+        | LTEQ
+        | GT
+        | GTEQ
 
     let matchIdentifier string =
         match string with
-        | "ENDIF" -> TokenType.ENDIF
-        | "ENDWHILE" -> TokenType.ENDWHILE
-        | "GOTO" -> TokenType.GOTO
-        | "IF" -> TokenType.IF
-        | "INPUT" -> TokenType.INPUT
-        | "LABEL" -> TokenType.LABEL
-        | "LET" -> TokenType.LET
-        | "PRINT" -> TokenType.PRINT
-        | "REPEAT" -> TokenType.REPEAT
-        | "THEN" -> TokenType.THEN
-        | "WHILE" -> TokenType.WHILE
-        | _ -> TokenType.IDENT
+        | "ENDIF" -> ENDIF
+        | "ENDWHILE" -> ENDWHILE
+        | "GOTO" -> GOTO
+        | "IF" -> IF
+        | "INPUT" -> INPUT
+        | "LABEL" -> LABEL
+        | "LET" -> LET
+        | "PRINT" -> PRINT
+        | "REPEAT" -> REPEAT
+        | "THEN" -> THEN
+        | "WHILE" -> WHILE
+        | _ -> IDENT
 
     let isComparisonOperator (tokenType: TokenType) =
         match tokenType with
-        | TokenType.GT
-        | TokenType.GTEQ
-        | TokenType.LT
-        | TokenType.LTEQ
-        | TokenType.EQEQ
-        | TokenType.NOTEQ -> true
+        | GT
+        | GTEQ
+        | LT
+        | LTEQ
+        | EQEQ
+        | NOTEQ -> true
         | _ -> false
 
 

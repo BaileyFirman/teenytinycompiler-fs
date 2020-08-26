@@ -27,7 +27,7 @@ module Parser =
             let nextToken = getToken nextPointer
 
             match nextToken.Type with
-            | TokenType.NEWLINE -> newline nextPointer
+            | NEWLINE -> newline nextPointer
             | _ -> nextPointer
 
         let primary streamPointer =
@@ -35,10 +35,10 @@ module Parser =
             printfn "PARSE: PRIMARY \"%s\"" currentToken.Text
 
             match currentToken.Type with
-            | TokenType.NUMBER ->
+            | NUMBER ->
                 emitter.Emit(currentToken.Text)
                 next streamPointer
-            | TokenType.IDENT ->
+            | IDENT ->
                 // match symbols.Contains currentToken.Text with
                 // | true -> ()
                 // | _ ->
@@ -55,8 +55,8 @@ module Parser =
 
             let newOffset =
                 match optionalToken.Type with
-                | TokenType.PLUS
-                | TokenType.MINUS ->
+                | PLUS
+                | MINUS ->
                     emitter.Emit(optionalToken.Text)
                     next streamPointer
                 | _ -> streamPointer
@@ -70,8 +70,8 @@ module Parser =
             let rec unaryLoop pointer =
                 let currentToken = getToken pointer
                 match currentToken.Type with
-                | TokenType.ASTERISK
-                | TokenType.SLASH ->
+                | ASTERISK
+                | SLASH ->
                     emitter.Emit(currentToken.Text)
                     let nextPointer = next pointer
                     let nextUnaryOffset = unary nextPointer
@@ -87,8 +87,8 @@ module Parser =
             let rec termLoop pointer =
                 let currentToken = getToken pointer
                 match currentToken.Type with
-                | TokenType.PLUS
-                | TokenType.MINUS ->
+                | PLUS
+                | MINUS ->
                     emitter.Emit(currentToken.Text)
                     let nextPointer = next pointer
                     let nextTermOffset = term nextPointer
@@ -104,7 +104,7 @@ module Parser =
 
             let printPointer =
                 match nextToken.Type with
-                | TokenType.STRING ->
+                | STRING ->
                     emitter.EmitLine("printf(\"" + nextToken.Text + "\\n\");")
                     next nextPointer
                 | _ ->
@@ -168,7 +168,7 @@ module Parser =
 
             let newlinePointer =
                 match identityToken.Type with
-                | TokenType.IDENT -> next nextPointer
+                | IDENT -> next nextPointer
                 | _ -> failwith "EXPECTED IDENTIFIER"
 
             newline newlinePointer
@@ -188,14 +188,14 @@ module Parser =
 
             let assignmentPointer =
                 match identityToken.Type with
-                | TokenType.IDENT -> next nextPointer
+                | IDENT -> next nextPointer
                 | _ -> failwith "EXPECTED IDENTIFIER"
 
             let expressionToken = getToken assignmentPointer
 
             let expressionPointer =
                 match expressionToken.Type with
-                | TokenType.EQ -> next assignmentPointer
+                | EQ -> next assignmentPointer
                 | _ -> failwith "EXPECTED EQ"
 
             let newlintPointer = expression expressionPointer
@@ -211,7 +211,7 @@ module Parser =
             emitter.EmitLine("goto " + identityToken.Text + ";")
 
             match identityToken.Type with
-            | TokenType.IDENT -> next nextPointer
+            | IDENT -> next nextPointer
             | _ -> failwith "EXPECTED IDENTIFIER"
 
         let inputStatement streamPointer =
@@ -233,7 +233,7 @@ module Parser =
 
             let newlinePointer =
                 match identityToken.Type with
-                | TokenType.IDENT -> next nextPointer
+                | IDENT -> next nextPointer
                 | _ -> failwith "EXPECTED IDENTIFIER"
 
             newline newlinePointer
@@ -247,7 +247,7 @@ module Parser =
 
             let thenPointer =
                 match comparisonToken.Type with
-                | TokenType.THEN -> matchThen comparisonPointer
+                | THEN -> matchThen comparisonPointer
                 | _ -> failwith "EXPECTED THEN"
 
             let newlinePointer = newline thenPointer
@@ -257,7 +257,7 @@ module Parser =
                 let currentToken = getToken pointer
 
                 match currentToken.Type with
-                | TokenType.ENDIF -> pointer
+                | ENDIF -> pointer
                 | _ -> pointer |> parseStatement |> ifLoop
 
             let statementPointer = ifLoop newlinePointer
@@ -265,7 +265,7 @@ module Parser =
             let endifToken = getToken statementPointer
 
             match endifToken.Type with
-            | TokenType.ENDIF ->
+            | ENDIF ->
                 emitter.EmitLine("}")
                 next statementPointer
             | _ -> failwith "EXPECTED ENDIF"
@@ -279,7 +279,7 @@ module Parser =
 
             let thenPointer =
                 match comparisonToken.Type with
-                | TokenType.REPEAT -> matchRepeat comparisonPointer
+                | REPEAT -> matchRepeat comparisonPointer
                 | _ -> failwith "EXPECTED REPEAT"
 
             let newlinePointer = newline thenPointer
@@ -289,7 +289,7 @@ module Parser =
                 let currentToken = getToken pointer
 
                 match currentToken.Type with
-                | TokenType.ENDWHILE -> pointer
+                | ENDWHILE -> pointer
                 | _ -> pointer |> parseStatement |> whileLoop
 
             let statementPointer = whileLoop newlinePointer
@@ -297,7 +297,7 @@ module Parser =
             let endwhileToken = getToken statementPointer
 
             match endwhileToken.Type with
-            | TokenType.ENDWHILE ->
+            | ENDWHILE ->
                 emitter.EmitLine("}")
                 next statementPointer
             | _ -> failwith "EXPECTED ENDWHILE"
@@ -307,14 +307,14 @@ module Parser =
 
             let statementFunction =
                 match currentToken.Type with
-                | TokenType.PRINT -> printStatement
-                | TokenType.IF -> ifStatement
-                | TokenType.WHILE -> whileStatement
-                | TokenType.LABEL -> labelStatement
-                | TokenType.GOTO -> gotoStatement
-                | TokenType.LET -> letStatement
-                | TokenType.INPUT -> inputStatement
-                | TokenType.NEWLINE -> newline
+                | PRINT -> printStatement
+                | IF -> ifStatement
+                | WHILE -> whileStatement
+                | LABEL -> labelStatement
+                | GOTO -> gotoStatement
+                | LET -> letStatement
+                | INPUT -> inputStatement
+                | NEWLINE -> newline
                 | _ ->
                     failwith
                     <| "NOT IMPLEMENTED: "
@@ -326,7 +326,7 @@ module Parser =
             let currentToken = getToken streamPointer
 
             match currentToken.Type with
-            | TokenType.EOF -> ()
+            | EOF -> ()
             | _ -> streamPointer |> parseStatement |> parseLoop
 
         printfn "PARSE: START PARSING"
