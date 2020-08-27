@@ -5,11 +5,6 @@ open System
 open Types.Tokens
 
 module Lexer =
-    let private findChar arr char = arr |> Array.findIndex ((=) char)
-
-    let private blankToken text: TokenType -> Token =
-        (fun tokenType -> { Text = text; Type = tokenType })
-
     // Character detection
     let private isLetter char = Char.IsLetter char
     let private isDigit char = Char.IsDigit char
@@ -20,9 +15,7 @@ module Lexer =
     let private previous pointer = pointer - 1
 
     // Data transformation
-    let private charsToString (chars: char []) = String chars
     let private combineChars first second = string first + string second
-    let private appendItem array item = Array.append array [| item |]
 
     let printTokenStream tokenStream =
         tokenStream
@@ -51,36 +44,24 @@ module Lexer =
                 | '\u0004' -> '\u0004'
                 | _ -> characterStream.[next streamPointer]
 
-            let tokenFromRange startPointer endPointer tokenType: Token =
-                let previousEndPointer = previous endPointer
+            let tokenFromRange sp ep tokenType =
+                let previousPointer = previous ep
+                let streamChars = String characterStream.[sp..previousPointer]
+                { Text = streamChars; Type = tokenType }
 
-                let streamChars =
-                    characterStream.[startPointer..previousEndPointer]
-                    |> charsToString
-
-                tokenFromString tokenType streamChars
-
-            let streamCharToken tokenType closingCharacter: Token =
+            let streamCharToken tokenType endChar: Token =
                 let nextPointer = next streamPointer
-
-                let closingPointer =
-                    let remainingStream = characterStream.[nextPointer..]
-
-                    let endPointer =
-                        findChar remainingStream closingCharacter
-
-                    endPointer + nextPointer
-
+                let remainingStream = characterStream.[nextPointer..]
+                let endPointer = remainingStream |> Array.findIndex ((=) endChar)
+                let closingPointer = endPointer + nextPointer
                 tokenFromRange nextPointer closingPointer tokenType
 
-            let singleCharToken tokenType: Token =
-                tokenFromString tokenType (string currentCharacter)
+            let singleCharToken tokenType =
+                { Text = string currentCharacter; Type = tokenType }
 
-            let doubleCharToken tokenType: Token =
-                let tokenText =
-                    combineChars currentCharacter nextCharacter
-
-                tokenFromString tokenType tokenText
+            let doubleCharToken tokenType =
+                let tokenText = String [|currentCharacter; nextCharacter|]
+                { Text = tokenText; Type = tokenType }
 
             let buildSymbolToken (): Token =
                 match currentCharacter, nextCharacter with
@@ -88,8 +69,6 @@ module Lexer =
                 | '\t', _
                 | '\r', _ -> singleCharToken WHITESPACE
                 | '-', _ -> singleCharToken MINUS
-                | '!', '=' -> doubleCharToken NOTEQ
-                | '!', _ -> "Expected !=" |> failwith
                 | '*', _ -> singleCharToken ASTERISK
                 | '/', _ -> singleCharToken SLASH
                 | '\"', _ -> streamCharToken STRING '\"'
@@ -97,48 +76,51 @@ module Lexer =
                 | '\u0004', _ -> singleCharToken EOF
                 | '#', _ -> streamCharToken COMMENT '\n'
                 | '+', _ -> singleCharToken PLUS
+                | '!', '=' -> doubleCharToken NOTEQ
                 | '<', '=' -> doubleCharToken LTEQ
                 | '<', _ -> singleCharToken LT
                 | '=', '=' -> doubleCharToken EQEQ
                 | '=', _ -> singleCharToken EQ
                 | '>', '=' -> doubleCharToken GTEQ
                 | '>', _ -> singleCharToken GT
-                | _, _ ->
-                    ("Aborted Lexing" + currentCharacter.ToString())
-                    |> failwith
+                | _, _ -> failwith "Aborted Lexing"
 
-            let buildCharacterToken startPointer: Token =
+            let buildCharacterToken startPointer =
+                let nextPointer = next startPointer
+
                 let streamToToken sp ep =
-                    let stringText =
-                        characterStream.[sp..ep] |> charsToString
-
+                    let stringText = String characterStream.[sp..ep]
                     let tokenType = matchIdentifier stringText
-                    tokenFromString tokenType stringText
+                    { Text = stringText; Type = tokenType }
 
                 let rec characterToken startPointer endPointer =
-
                     let nextCharacter = characterStream.[endPointer]
+                    let nextPointer = next endPointer
+                    let previousPointer = previous endPointer
 
                     match isLetter nextCharacter with
-                    | true -> characterToken startPointer <| next endPointer
-                    | false -> streamToToken startPointer <| previous endPointer
+                    | true -> characterToken startPointer nextPointer 
+                    | false -> streamToToken startPointer previousPointer
+                
+                characterToken startPointer nextPointer
 
-                characterToken startPointer <| next startPointer
+            let buildNumberToken sp =
+                let rec newNumberTokenLoop ep: Token =
+                    let nextPointer = next ep
+                    let nextCharacter = characterStream.[ep]
 
-            let buildNumberToken startPointer: Token =
-                let rec newNumberTokenLoop endPointer: Token =
-                    let nextCharacter = characterStream.[endPointer]
+                    let handlePoint ep =
+                        let nextCharAfterPointer = characterStream.[next ep]
+                        match isDigit nextCharAfterPointer with
+                        | true -> ep |> next |> newNumberTokenLoop
+                        | false -> failwith "Illegal Character in number"
 
                     match isDigit nextCharacter, isPoint nextCharacter with
-                    | false, false -> tokenFromRange startPointer endPointer NUMBER
-                    | _, true ->
-                        let nextCharAfterPointer = characterStream.[next endPointer]
-                        match isDigit nextCharAfterPointer with
-                        | true -> endPointer |> next |> newNumberTokenLoop
-                        | false -> failwith "Illegal Character in number"
-                    | true, _ -> endPointer |> next |> newNumberTokenLoop
+                    | false, false -> tokenFromRange sp ep NUMBER
+                    | _, true -> handlePoint ep
+                    | true, _ -> newNumberTokenLoop nextPointer
 
-                startPointer |> next |> newNumberTokenLoop
+                newNumberTokenLoop <| next sp
 
             let newToken: Token =
                 match isLetter currentCharacter, isDigit currentCharacter with
