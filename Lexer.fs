@@ -14,9 +14,6 @@ module Lexer =
     let private next pointer = pointer + 1
     let private previous pointer = pointer - 1
 
-    // Data transformation
-    let private combineChars first second = string first + string second
-
     let printTokenStream tokenStream =
         tokenStream
         |> Array.map (fun x ->
@@ -36,7 +33,7 @@ module Lexer =
 
     let lexCharacterStream (characterStream: char []): Token [] =
 
-        let rec lexLoop (tokenList: list<Token>) streamPointer =
+        let rec lexLoop tokenList streamPointer =
             let currentCharacter = characterStream.[streamPointer]
 
             let nextCharacter: char =
@@ -63,7 +60,7 @@ module Lexer =
                 let tokenText = String [|currentCharacter; nextCharacter|]
                 { Text = tokenText; Type = tokenType }
 
-            let buildSymbolToken (): Token =
+            let buildSymbolToken () =
                 match currentCharacter, nextCharacter with
                 | ' ', _
                 | '\t', _
@@ -122,11 +119,11 @@ module Lexer =
 
                 newNumberTokenLoop <| next sp
 
-            let newToken: Token =
+            let newToken =
                 match isLetter currentCharacter, isDigit currentCharacter with
-                | false, false -> buildSymbolToken ()
                 | true, _ -> buildCharacterToken streamPointer
                 | _, true -> buildNumberToken streamPointer
+                | _, _ -> buildSymbolToken ()
 
             let newTokens = newToken :: tokenList
 
@@ -144,11 +141,9 @@ module Lexer =
 
         let result =
             lexLoop [] 0
-            |> Seq.filter (fun x -> (x.Type <> WHITESPACE))
-            |> Seq.toList
+            |> List.filter (fun x -> (x.Type <> WHITESPACE))
             |> List.rev
-            |> List.toSeq
-            |> Seq.toArray
+            |> List.toArray
 
         printTokenStream result |> ignore
         result
