@@ -2,6 +2,7 @@ open Lexer.Lexer
 open Microsoft.FSharp.Core
 open Parser.Parser
 open System.IO
+open Lexer2.Lexer2
 
 module FileActions =
     let eofCharacter = '\u0004'.ToString()
@@ -23,6 +24,7 @@ let main argv =
         | _ -> "output.c"
 
     let fileStream = FileActions.loadFileString inputFilePath
+    let tokenStream2 = lextCharacterStream <| fileStream.ToCharArray()
     let tokenStream = lexCharacterStream <| fileStream.ToCharArray()
     let emittedCode = parseTokenStream tokenStream
 
