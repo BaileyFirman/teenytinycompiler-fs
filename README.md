@@ -38,27 +38,15 @@ Like the original python implementation it supports:
 Example code:
 
 ```
-
 PRINT "How many fibonacci numbers do you want?"
 
 INPUT nums
-
-  
-
 LET a = 0
-
 LET b = 1
-
 WHILE nums > 0 REPEAT
-
-PRINT a
-
-LET c = a + b
-
-LET a = b
-
-LET b = c
-
+	PRINT a
+	LET c = a + b
+	LET a = b
+	LET b = c
 ENDWHILE
-
 ```
