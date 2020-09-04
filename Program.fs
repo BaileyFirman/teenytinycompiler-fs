@@ -1,8 +1,7 @@
-open Lexer.Lexer
 open Microsoft.FSharp.Core
-open Parser.Parser
 open System.IO
-open Lexer2.Lexer2
+open TennyTiny.Lexer
+open TennyTiny.Parser
 
 module FileActions =
     let eofCharacter = '\u0004'.ToString()
@@ -24,8 +23,7 @@ let main argv =
         | _ -> "output.c"
 
     let fileStream = FileActions.loadFileString inputFilePath
-    let tokenStream2 = lextCharacterStream <| fileStream.ToCharArray()
-    let tokenStream = lexCharacterStream <| fileStream.ToCharArray()
+    let tokenStream = lex <| fileStream.ToCharArray()
     let emittedCode = parseTokenStream tokenStream
 
     FileActions.writeFileString outputFilePath emittedCode

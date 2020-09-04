@@ -1,9 +1,8 @@
-namespace Parser
+namespace TennyTiny
 
-open Types.Tokens
-open Emitter
 open System.Collections.Generic
-open Emitter.Emitter
+open TeenyTiny.Emitter
+open TeenyTiny.Types
 
 module Parser =
     let getType token = token.Type
@@ -35,16 +34,8 @@ module Parser =
             printfn "PARSE: PRIMARY \"%s\"" currentToken.Text
 
             match currentToken.Type with
-            | NUMBER ->
-                emitter.Emit(currentToken.Text)
-                next streamPointer
+            | NUMBER
             | IDENT ->
-                // match symbols.Contains currentToken.Text with
-                // | true -> ()
-                // | _ ->
-                //     failwith
-                //     <| "Referencing variable before assignment: "
-                //     + currentToken.Text
                 emitter.Emit(currentToken.Text)
                 next streamPointer
             | _ -> failwith ("UNEXPECTED TOKEN" + currentToken.Text)
@@ -123,7 +114,7 @@ module Parser =
             let operatorTokenType = getType operatorToken
 
             let nextPointer =
-                match isComparisonOperator operatorTokenType with
+                match isTypeComparisonOperator operatorTokenType with
                 | true ->
                     emitter.Emit(operatorToken.Text)
                     let expressionPointer = next operatorPointer
@@ -133,7 +124,7 @@ module Parser =
             let rec additionalComparisonLoop pointer =
                 let nextToken = getToken pointer
                 let nextTokenType = getType nextToken
-                match isComparisonOperator nextTokenType with
+                match isTypeComparisonOperator nextTokenType with
                 | true ->
                     emitter.Emit(nextToken.Text)
                     pointer

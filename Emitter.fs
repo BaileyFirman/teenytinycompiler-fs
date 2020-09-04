@@ -1,4 +1,4 @@
-namespace Emitter
+namespace TeenyTiny
 
 open Microsoft.FSharp.Core
 open System.IO

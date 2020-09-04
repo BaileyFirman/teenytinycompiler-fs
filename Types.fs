@@ -1,8 +1,8 @@
-namespace Types
+namespace TeenyTiny
 
-module Tokens =
+module Types =
     type TokenType =
-        EOF
+        | EOF
         | NEWLINE
         | NUMBER
         | IDENT
@@ -32,7 +32,7 @@ module Tokens =
         | GT
         | GTEQ
 
-    let matchIdentifier string =
+    let stringToKeywordType string =
         match string with
         | "ENDIF" -> ENDIF
         | "ENDWHILE" -> ENDWHILE
@@ -47,7 +47,7 @@ module Tokens =
         | "WHILE" -> WHILE
         | _ -> IDENT
 
-    let isComparisonOperator (tokenType: TokenType) =
+    let isTypeComparisonOperator tokenType =
         match tokenType with
         | GT
         | GTEQ
@@ -57,5 +57,5 @@ module Tokens =
         | NOTEQ -> true
         | _ -> false
 
-
     type Token = { Text: string; Type: TokenType }
+    let eofToken = { Type = EOF; Text = "EOF" }
