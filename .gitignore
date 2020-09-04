@@ -1,5 +1,10 @@
-/obj
-/bin
-.ionide*
+.DS_Store
 .fake
 .ionide
+.ionide*
+*.c
+*.out
+/bin
+/obj
+/part1/bin
+/part1/obj
