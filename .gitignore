@@ -6,5 +6,5 @@
 *.out
 /bin
 /obj
-/part1/bin
-/part1/obj
+*/bin
+*/obj
