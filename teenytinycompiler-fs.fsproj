@@ -9,7 +9,6 @@
   <ItemGroup>
     <Compile Include="Types.fs" />
     <Compile Include="Emitter.fs" />
-    <Compile Include="Lexer2.fs" />
     <Compile Include="Lexer.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Program.fs" />
